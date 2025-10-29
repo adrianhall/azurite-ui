@@ -1,0 +1,78 @@
+# .dockerignore - Exclude files from Docker build context
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+LICENSE
+docs/
+
+# CI/CD
+.github/
+.azure-pipelines.yml
+azure-pipelines.yml
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*~
+
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/publish/
+**/dist/
+
+# Test results
+**/TestResults/
+**/*.trx
+**/*.coverage
+**/*.coveragexml
+settings.runsettings
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+nuget.exe
+
+# Local data and databases
+*.db
+*.db-shm
+*.db-wal
+**/data/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.cache

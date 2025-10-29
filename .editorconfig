@@ -376,7 +376,21 @@ dotnet_naming_style.camelcase.word_separator =
 dotnet_naming_style.camelcase.capitalization = camel_case
 
 dotnet_naming_style.s_camelcase.required_prefix = s_
-dotnet_naming_style.s_camelcase.required_suffix = 
-dotnet_naming_style.s_camelcase.word_separator = 
+dotnet_naming_style.s_camelcase.required_suffix =
+dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
+
+#### Test Projects ####
+# Disable certain code quality rules for test files
+[tests/**/*.{cs,vb}]
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CA1062.severity = none  # Validate arguments of public methods (often unnecessary in tests)
+dotnet_diagnostic.CS1591.severity = none  # Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CA1707.severity = none  # Identifiers should not contain underscores (common in test names)
+dotnet_diagnostic.CA1859.severity = none  # Use concrete type instead of interface for member types (often unnecessary in tests)
+dotnet_diagnostic.CA2007.severity = none  # Do not directly await a Task (ConfigureAwait in tests)
+dotnet_diagnostic.CA1806.severity = none  # Do not ignore method results (sometimes done in tests)
+
+# Add other test-specific rule overrides below as needed:
 

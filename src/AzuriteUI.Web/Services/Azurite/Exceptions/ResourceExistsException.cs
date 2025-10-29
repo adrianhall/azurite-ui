@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace AzuriteUI.Web.Services.Azurite.Exceptions;
 
 /// <summary>
@@ -8,6 +10,7 @@ public class ResourceExistsException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceExistsException"/> class.
     /// </summary>
+    [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public ResourceExistsException()
     {
     }
@@ -17,6 +20,7 @@ public class ResourceExistsException : Exception
     /// a specified error message.
     /// </summary>
     /// <param name="message">The error message.</param>
+    [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public ResourceExistsException(string? message)
         : base(message)
     {
@@ -28,8 +32,14 @@ public class ResourceExistsException : Exception
     /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The inner exception.</param>
+    [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public ResourceExistsException(string? message, Exception? innerException)
         : base(message, innerException)
     {
     }
+
+    /// <summary>
+    /// The name of the resource that was requested.
+    /// </summary>
+    public string? ResourceName { get; internal set; }
 }

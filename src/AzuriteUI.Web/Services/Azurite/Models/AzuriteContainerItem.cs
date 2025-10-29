@@ -1,4 +1,7 @@
-﻿namespace AzuriteUI.Web.Services.Azurite.Models;
+﻿using Azure.Storage.Blobs.Models;
+using AzuriteUI.Web.Extensions;
+
+namespace AzuriteUI.Web.Services.Azurite.Models;
 
 /// <summary>
 /// The possible levels of public access for an Azurite container.
@@ -74,4 +77,30 @@ public class AzuriteContainerItem : AzuriteResourceItem
     /// Located in the Properties version of the model class from Azurite.
     /// </remarks>
     public int? RemainingRetentionDays { get; set; }
+
+    /// <summary>
+    /// Creates an <see cref="AzuriteContainerItem"/> from an Azurite container model.
+    /// </summary>
+    /// <param name="container">The Azurite container model.</param>
+    /// <returns>The Azurite container item.</returns>
+    public static AzuriteContainerItem FromAzure(BlobContainerItem container)
+    {
+        return new AzuriteContainerItem
+        {
+            // AzuriteResourceItem properties
+            Name = container.Name,
+            ETag = container.Properties.ETag.ToString().Dequote(),
+            LastModified = container.Properties.LastModified,
+
+            // AzuriteContainerItem properties
+            DefaultEncryptionScope = container.Properties.DefaultEncryptionScope ?? string.Empty,
+            HasImmutabilityPolicy = container.Properties.HasImmutabilityPolicy.GetValueOrDefault(false),
+            HasImmutableStorageWithVersioning = container.Properties.HasImmutableStorageWithVersioning,
+            HasLegalHold = container.Properties.HasLegalHold.GetValueOrDefault(false),
+            Metadata = container.Properties.Metadata?.ToDictionary() ?? [],
+            PreventEncryptionScopeOverride = container.Properties.PreventEncryptionScopeOverride.GetValueOrDefault(false),
+            PublicAccess = container.Properties.PublicAccess.GetValueOrDefault(PublicAccessType.None).ToAzuritePublicAccess(),
+            RemainingRetentionDays = container.Properties.RemainingRetentionDays
+        };
+    }
 }

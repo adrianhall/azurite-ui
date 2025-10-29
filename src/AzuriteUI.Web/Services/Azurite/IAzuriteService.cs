@@ -159,27 +159,30 @@ public interface IAzuriteService
     Task<AzuriteBlobItem> UpdateBlobAsync(string containerName, string blobName, AzuriteBlobProperties properties, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Initiates a new blob upload session.
+    /// Uploads a single chunk (block) of blob data to Azurite. This method stages the block but does not
+    /// finalize the blob. Multiple blocks can be staged before calling <see cref="UploadCommitAsync"/> to
+    /// commit them all at once. Each block ID must be Base64-encoded and unique within the blob.
+    /// </summary>
+    /// <param name="containerName">The name of the container where the blob is being uploaded.</param>
+    /// <param name="blobName">The name of the blob being uploaded.</param>
+    /// <param name="blockId">The Base64-encoded block ID for this chunk. Must be unique within the blob.</param>
+    /// <param name="content">The stream containing the chunk data to upload.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>A task that resolves to a <see cref="AzuriteBlobBlockInfo"/> with upload details.</returns>
+    Task<AzuriteBlobBlockInfo> UploadBlockAsync(string containerName, string blobName, string blockId, Stream content, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if a blob exists in the specified container.  This is normally used as part of the upload
+    /// process to initiate a new upload session.
     /// </summary>
     /// <param name="containerName">The name of the container to upload the blob to.</param>
     /// <param name="blobName">The name of the blob to upload.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="ArgumentException">Thrown if the container name or blob name is invalid.</exception>
-    /// <exception cref="ResourceNotFoundException">Thrown if the specified blob or container does not exist.</exception>
+    /// <exception cref="ResourceExistsException">Thrown if the blob already exists..</exception>
+    /// <exception cref="ResourceNotFoundException">Thrown if the specified container does not exist.</exception>
     /// <exception cref="AzuriteServiceException">Thrown if there is an error initiating the upload.</exception>
-    Task InitiateUploadAsync(string containerName, string blobName, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Uploads a block of data for a blob upload session.
-    /// </summary>
-    /// <param name="blockId">The ID of the block to upload.</param>
-    /// <param name="content">The content of the block to upload.</param>
-    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="ArgumentException">Thrown if the block ID is invalid.</exception>
-    /// <exception cref="AzuriteServiceException">Thrown if there is an error uploading the block.</exception>
-    Task<AzuriteBlobBlockInfo> UploadBlockAsync(string blockId, Stream content, CancellationToken cancellationToken = default);
+    Task UploadCheckAsync(string containerName, string blobName, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Commits the uploaded blocks to finalize the blob upload.
@@ -193,6 +196,6 @@ public interface IAzuriteService
     /// <exception cref="ArgumentException">Thrown if the container name or blob name is invalid.</exception>
     /// <exception cref="ResourceExistsException">Thrown if a blob with the specified name already exists.</exception>
     /// <exception cref="AzuriteServiceException">Thrown if there is an error committing the upload.</exception>
-    Task<AzuriteBlobItem> CommitUploadAsync(string containerName, string blobName, IEnumerable<string> blockIds, AzuriteBlobProperties properties, CancellationToken cancellationToken = default);
+    Task<AzuriteBlobItem> UploadCommitAsync(string containerName, string blobName, IEnumerable<string> blockIds, AzuriteBlobProperties properties, CancellationToken cancellationToken = default);
     #endregion
 }

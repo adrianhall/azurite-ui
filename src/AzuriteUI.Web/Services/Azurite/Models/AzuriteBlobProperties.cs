@@ -15,4 +15,19 @@ public class AzuriteBlobProperties
     /// The tags (key-value pairs) associated with this blob.
     /// </summary>
     public IDictionary<string, string> Tags { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// The content encoding of the blob.
+    /// </summary>
+    public string? ContentEncoding { get; set; }
+
+    /// <summary>
+    /// The content language of the blob.
+    /// </summary>
+    public string? ContentLanguage { get; set; }
+
+    /// <summary>
+    /// The content type of the blob.
+    /// </summary>
+    public string? ContentType { get; set; }
 }

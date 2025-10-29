@@ -1,5 +1,8 @@
 ﻿namespace AzuriteUI.Web.Extensions;
 
+/// <summary>
+/// A set of extension methods for <see cref="IConfiguration"/>.
+/// </summary>
 public static class ConfigurationExtensions
 {
     /// <summary>

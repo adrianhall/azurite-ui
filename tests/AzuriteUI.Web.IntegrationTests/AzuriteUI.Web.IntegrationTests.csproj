@@ -1,24 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="AngleSharp" Version="1.3.0" />
+        <PackageReference Include="AwesomeAssertions" Version="9.2.1" />
+        <PackageReference Include="AwesomeAssertions.Analyzers" Version="9.0.8">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0-rc.2.25502.107" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+        <PackageReference Include="NSubstitute" Version="5.3.0" />
+        <PackageReference Include="NSubstitute.Analyzers.CSharp" Version="1.0.17">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Testcontainers.Azurite" Version="4.8.1" />
+        <PackageReference Include="xunit.v3" Version="3.1.0" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
+    <ItemGroup>
+        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
-
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\AzuriteUI.Web\AzuriteUI.Web.csproj" />
+    </ItemGroup>
 </Project>

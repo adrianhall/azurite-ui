@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace AzuriteUI.Web.Services.Azurite.Exceptions;
 
 /// <summary>
@@ -9,6 +11,7 @@ public class RangeNotSatisfiableException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="RangeNotSatisfiableException"/> class.
     /// </summary>
+    [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public RangeNotSatisfiableException()
     {
     }
@@ -18,6 +21,7 @@ public class RangeNotSatisfiableException : Exception
     /// a specified error message.
     /// </summary>
     /// <param name="message">The error message.</param>
+    [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public RangeNotSatisfiableException(string? message)
         : base(message)
     {
@@ -29,6 +33,7 @@ public class RangeNotSatisfiableException : Exception
     /// </summary>
     /// <param name="message">The error message.</param>
     /// <param name="innerException">The inner exception.</param>
+    [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public RangeNotSatisfiableException(string? message, Exception? innerException)
         : base(message, innerException)
     {

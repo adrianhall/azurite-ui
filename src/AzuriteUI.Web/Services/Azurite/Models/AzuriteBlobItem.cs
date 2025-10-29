@@ -1,4 +1,7 @@
-﻿namespace AzuriteUI.Web.Services.Azurite.Models;
+﻿using Azure.Storage.Blobs.Models;
+using AzuriteUI.Web.Extensions;
+
+namespace AzuriteUI.Web.Services.Azurite.Models;
 
 /// <summary>
 /// The types of supported Azurite blobs.
@@ -94,4 +97,34 @@ public class AzuriteBlobItem : AzuriteResourceItem
     /// The tags (key-value pairs) associated with this blob.
     /// </summary>
     public IDictionary<string, string> Tags { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Creates an <see cref="AzuriteBlobItem"/> from an Azurite blob model.
+    /// </summary>
+    /// <param name="blobItem">The Azurite blob model.</param>
+    /// <returns>The Azurite container item.</returns>
+    public static AzuriteBlobItem FromAzure(BlobItem blobItem)
+    {
+        return new AzuriteBlobItem
+        {
+            // AzureResourceItem properties
+            Name = blobItem.Name,
+            ETag = blobItem.Properties.ETag?.ToString().Dequote() ?? string.Empty,
+            LastModified = blobItem.Properties.LastModified.GetValueOrDefault(DateTimeOffset.MinValue),
+
+            // AzuriteBlobItem properties
+            BlobType = blobItem.Properties.BlobType.ToAzuriteBlobType(),
+            ContentEncoding = blobItem.Properties.ContentEncoding ?? string.Empty,
+            ContentLanguage = blobItem.Properties.ContentLanguage ?? string.Empty,
+            ContentLength = blobItem.Properties.ContentLength.GetValueOrDefault(0L),
+            ContentType = blobItem.Properties.ContentType,
+            CreatedOn = blobItem.Properties.CreatedOn,
+            ExpiresOn = blobItem.Properties.ExpiresOn,
+            HasLegalHold = blobItem.Properties.HasLegalHold,
+            LastAccessedOn = blobItem.Properties.LastAccessedOn,
+            Metadata = blobItem.Metadata.ToDictionary(),
+            RemainingRetentionDays = blobItem.Properties.RemainingRetentionDays,
+            Tags = blobItem.Tags?.ToDictionary() ?? []
+        };
+    }
 }

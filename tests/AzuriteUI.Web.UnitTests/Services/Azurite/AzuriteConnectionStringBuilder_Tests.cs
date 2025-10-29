@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using AwesomeAssertions;
 using AzuriteUI.Web.Services.Azurite;
 
 namespace AzuriteUI.Web.UnitTests.Services.Azurite;
@@ -278,13 +276,13 @@ public class AzuriteConnectionStringBuilder_Tests
     {
         // Arrange
         var builder = new AzuriteConnectionStringBuilder();
-        var accountName = "a123456789012345678901234"; // 25 characters but only 24 allowed
+        const string accountName = "a12345678901234567890123"; // 25 characters but only 24 allowed
 
         // Act - Let's test the valid 24 character version
-        var result = builder.WithAccountName("a12345678901234567890123"); // 24 characters
+        var result = builder.WithAccountName(accountName); // 24 characters
 
         // Assert
-        builder._properties["AccountName"].Should().Be("a12345678901234567890123");
+        builder._properties["AccountName"].Should().Be(accountName);
     }
 
     [Fact]

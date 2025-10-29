@@ -1,0 +1,67 @@
+services:
+  # Azurite - Azure Storage emulator (not exposed externally)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: azurite
+    hostname: azurite
+    restart: unless-stopped
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck"
+    volumes:
+      - azurite-data:/data
+    networks:
+      - azurite-network
+    healthcheck:
+      test: nc 127.0.0.1 10000 -z
+      interval: 2s
+      retries: 15
+    expose:
+      - "10000"  # Blob service
+      - "10001"  # Queue service
+      - "10002"  # Table service
+    environment:
+      - AZURITE_ACCOUNTS=devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+
+  # AzuriteUI - Web interface (exposed externally)
+  azuriteui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    container_name: azurite-ui
+    hostname: azurite-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Only expose UI
+    depends_on:
+      azurite:
+        condition: service_healthy
+    networks:
+      - azurite-network
+    volumes:
+      - azurite-ui-data:/app/data  # Persist SQLite cache database
+    environment:
+      # Connection string pointing to internal Azurite service
+      - ConnectionStrings__Azurite=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      - ConnectionStrings__CacheDatabase=Data Source=/app/data/cache.db;Mode=ReadWriteCreate;Cache=Shared;Foreign Keys=True;
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  azurite-network:
+    driver: bridge
+    name: azurite-network
+
+volumes:
+  azurite-data:
+    name: azurite-data
+    driver: local
+  azurite-ui-data:
+    name: azurite-ui-data
+    driver: local
