@@ -9,7 +9,7 @@ public class AzureExtensions_Tests
 {
     #region Dequote Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithNull_ShouldReturnEmptyString()
     {
         // Arrange
@@ -22,7 +22,7 @@ public class AzureExtensions_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
@@ -35,7 +35,7 @@ public class AzureExtensions_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithWhitespace_ShouldReturnEmptyString()
     {
         // Arrange
@@ -48,7 +48,7 @@ public class AzureExtensions_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithQuotedString_ShouldRemoveQuotes()
     {
         // Arrange
@@ -61,7 +61,7 @@ public class AzureExtensions_Tests
         result.Should().Be("test-value");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithUnquotedString_ShouldReturnSameString()
     {
         // Arrange
@@ -74,7 +74,7 @@ public class AzureExtensions_Tests
         result.Should().Be("test-value");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithOnlyLeadingQuote_ShouldReturnSameString()
     {
         // Arrange
@@ -87,7 +87,7 @@ public class AzureExtensions_Tests
         result.Should().Be("\"test-value");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithOnlyTrailingQuote_ShouldReturnSameString()
     {
         // Arrange
@@ -100,7 +100,7 @@ public class AzureExtensions_Tests
         result.Should().Be("test-value\"");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithQuotesInMiddle_ShouldReturnSameString()
     {
         // Arrange
@@ -113,7 +113,7 @@ public class AzureExtensions_Tests
         result.Should().Be("test\"quoted\"value");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithQuotedEmptyString_ShouldReturnEmptyString()
     {
         // Arrange
@@ -126,7 +126,7 @@ public class AzureExtensions_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithQuotedETag_ShouldRemoveQuotes()
     {
         // Arrange
@@ -139,7 +139,7 @@ public class AzureExtensions_Tests
         result.Should().Be("0x8D9F7B3C2A1B0E5");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Dequote_WithMultipleQuotesAtBothEnds_ShouldRemoveAllQuotesFromEnds()
     {
         // Arrange
@@ -156,7 +156,7 @@ public class AzureExtensions_Tests
 
     #region ToAzuriteBlobType Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuriteBlobType_WithNull_ShouldReturnBlock()
     {
         // Arrange
@@ -169,7 +169,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuriteBlobType.Block);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuriteBlobType_WithBlockBlobType_ShouldReturnBlock()
     {
         // Arrange
@@ -182,7 +182,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuriteBlobType.Block);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuriteBlobType_WithAppendBlobType_ShouldReturnAppend()
     {
         // Arrange
@@ -195,7 +195,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuriteBlobType.Append);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuriteBlobType_WithPageBlobType_ShouldReturnPage()
     {
         // Arrange
@@ -208,7 +208,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuriteBlobType.Page);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuriteBlobType_WithUnsupportedBlobType_ShouldThrowArgumentOutOfRangeException()
     {
         // Arrange
@@ -227,7 +227,7 @@ public class AzureExtensions_Tests
 
     #region ToAzuritePublicAccess Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuritePublicAccess_WithNonePublicAccessType_ShouldReturnNone()
     {
         // Arrange
@@ -240,7 +240,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuritePublicAccess.None);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuritePublicAccess_WithBlobPublicAccessType_ShouldReturnBlob()
     {
         // Arrange
@@ -253,7 +253,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuritePublicAccess.Blob);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuritePublicAccess_WithBlobContainerPublicAccessType_ShouldReturnContainer()
     {
         // Arrange
@@ -266,7 +266,7 @@ public class AzureExtensions_Tests
         result.Should().Be(AzuritePublicAccess.Container);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToAzuritePublicAccess_WithUnsupportedPublicAccessType_ShouldThrowArgumentOutOfRangeException()
     {
         // Arrange
@@ -285,7 +285,7 @@ public class AzureExtensions_Tests
 
     #region AsOptionalBase64 Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithNull_ShouldReturnNull()
     {
         // Arrange
@@ -298,7 +298,7 @@ public class AzureExtensions_Tests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithEmptyByteArray_ShouldReturnEmptyBase64String()
     {
         // Arrange
@@ -312,7 +312,7 @@ public class AzureExtensions_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithValidByteArray_ShouldReturnBase64String()
     {
         // Arrange
@@ -326,7 +326,7 @@ public class AzureExtensions_Tests
         result.Should().Be("AQIDBAU=");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithMD5Hash_ShouldReturnValidBase64String()
     {
         // Arrange
@@ -345,7 +345,7 @@ public class AzureExtensions_Tests
         result.Should().Be("1B2M2Y8AsgTpgAmY7PhCfg==");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithSingleByte_ShouldReturnBase64String()
     {
         // Arrange
@@ -359,7 +359,7 @@ public class AzureExtensions_Tests
         result.Should().Be("/w==");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithAllZeros_ShouldReturnValidBase64String()
     {
         // Arrange
@@ -373,7 +373,7 @@ public class AzureExtensions_Tests
         result.Should().Be("AAAAAA==");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void AsOptionalBase64_WithContentHashFromAzure_ShouldReturnProperlyFormattedString()
     {
         // Arrange

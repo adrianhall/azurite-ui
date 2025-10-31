@@ -11,6 +11,22 @@ The integration tests are placed in the `tests/AzuriteUI.Web.IntegrationTests` p
 * Use NSubstitute for mocking.
 * **DO NOT USE Moq or FluentAssertions** - these are forbidden libraries due to licensing.
 
+### Testing log messages
+
+* Avoid testing exact error messages within logs.
+* Do not write tests that test debug log output.
+* Use Microsoft.Extensions.Diagnostics.Testing TestLogger classes for checking logs.
+
+### Mocking IConfiguration and IServiceProvider
+
+* Do not mock IConfiguration or IServiceProvider
+* Build a concrete IConfiguration using a ConfigurationBuilder with an in-memory provider
+* Build a concrete IServiceProvider using a ServiceCollection when required
+
+## Time outs
+
+Add a 60 second timeout to each test that you write.  We will adjust timeouts as needed if this is too short.
+
 ## Fixtures
 
 Fixtures are located in the `Helpers` directory.  

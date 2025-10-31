@@ -1,7 +1,7 @@
 using AzuriteUI.Web.Services.Azurite;
 using AzuriteUI.Web.Services.Azurite.Exceptions;
 using AzuriteUI.Web.Services.Azurite.Models;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using System.Text;
 
 namespace AzuriteUI.Web.IntegrationTests.Services.Azurite;
@@ -14,12 +14,14 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
 {
     private readonly AzuriteFixture _fixture;
     private readonly IAzuriteService _service;
+    private readonly FakeLogger<AzuriteService> _logger;
     private readonly List<string> _containersToCleanup = [];
 
     public AzuriteService_Tests(AzuriteFixture fixture)
     {
         _fixture = fixture;
-        _service = new AzuriteService(_fixture.ConnectionString, NullLogger<AzuriteService>.Instance);
+        _logger = new FakeLogger<AzuriteService>();
+        _service = new AzuriteService(_fixture.ConnectionString, _logger);
     }
 
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
@@ -31,7 +33,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     }
 
     #region ConnectionString Property
-    [Fact]
+    [Fact(Timeout = 60000)]
     public void ConnectionString_ShouldReturnValidConnectionString()
     {
         // Arrange & Act
@@ -44,7 +46,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region GetHealthStatusAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetHealthStatusAsync_WhenAzuriteIsRunning_ShouldReturnHealthyStatus()
     {
         // Arrange
@@ -63,7 +65,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region CreateContainerAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task CreateContainerAsync_WithValidName_ShouldCreateContainer()
     {
         // Arrange
@@ -78,7 +80,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.Name.Should().Be(containerName);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task CreateContainerAsync_WithMetadata_ShouldCreateContainerWithMetadata()
     {
         // Arrange
@@ -101,7 +103,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.Metadata.Should().BeEquivalentTo(properties.Metadata);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task CreateContainerAsync_WhenContainerAlreadyExists_ShouldThrowResourceExistsException()
     {
         // Arrange
@@ -115,7 +117,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceExistsException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task CreateContainerAsync_WithInvalidContainerName_ShouldThrowAzuriteServiceException()
     {
         // Arrange
@@ -131,7 +133,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         exception.Which.StatusCode.Should().Be(400);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task CreateContainerAsync_WithContainerNameTooShort_ShouldThrowAzuriteServiceException()
     {
         // Arrange
@@ -147,7 +149,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         exception.Which.StatusCode.Should().Be(400);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task CreateContainerAsync_WithInvalidCharacters_ShouldThrowAzuriteServiceException()
     {
         // Arrange
@@ -165,7 +167,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region DeleteContainerAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DeleteContainerAsync_WhenContainerExists_ShouldDeleteContainer()
     {
         // Arrange
@@ -179,7 +181,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DeleteContainerAsync_WhenContainerDoesNotExist_ShouldNotThrow()
     {
         // Arrange
@@ -194,7 +196,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region GetContainerAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetContainerAsync_WhenContainerExists_ShouldReturnContainer()
     {
         // Arrange
@@ -208,7 +210,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.Name.Should().Be(containerName);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetContainerAsync_WhenContainerHasMetadata_ShouldReturnMetadata()
     {
         // Arrange
@@ -228,7 +230,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.Metadata.Should().BeEquivalentTo(metadata);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetContainerAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -243,7 +245,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region GetContainersAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetContainersAsync_WhenContainersExist_ShouldReturnContainers()
     {
         // Arrange
@@ -260,7 +262,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
             .And.Contain(x => x.Name == containerName2);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetContainersAsync_WhenNoContainersExist_ShouldReturnEmptySequence()
     {
         // Arrange
@@ -275,7 +277,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region UpdateContainerAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UpdateContainerAsync_WithNewMetadata_ShouldUpdateContainer()
     {
         // Arrange
@@ -300,7 +302,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
             .And.ContainKey("timestamp"); 
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UpdateContainerAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -316,7 +318,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region DeleteBlobAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DeleteBlobAsync_WhenBlobExists_ShouldDeleteBlob()
     {
         // Arrange
@@ -331,7 +333,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         exists.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DeleteBlobAsync_WhenBlobDoesNotExist_ShouldNotThrow()
     {
         // Arrange
@@ -345,7 +347,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().NotThrowAsync();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DeleteBlobAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -361,7 +363,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region DownloadBlobAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DownloadBlobAsync_WhenBlobExists_ShouldDownloadBlob()
     {
         // Arrange
@@ -386,7 +388,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         content.Should().Be(expectedContent);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DownloadBlobAsync_WithRange_ShouldDownloadPartialContent()
     {
         // Arrange
@@ -411,7 +413,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         content.Should().Be("01234");
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DownloadBlobAsync_WhenBlobDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -425,7 +427,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task DownloadBlobAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -441,7 +443,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region GetBlobAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetBlobAsync_WhenBlobExists_ShouldReturnBlob()
     {
         // Arrange
@@ -460,7 +462,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.ContentType.Should().Be("text/plain");
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetBlobAsync_WhenBlobDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -474,7 +476,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetBlobAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -490,7 +492,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region GetBlobsAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetBlobsAsync_WhenBlobsExist_ShouldReturnBlobs()
     {
         // Arrange
@@ -507,7 +509,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
             .And.Contain(b => b.Name == blobName2);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetBlobsAsync_WhenNoBlobsExist_ShouldReturnEmptySequence()
     {
         // Arrange
@@ -520,7 +522,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         results.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task GetBlobsAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -535,7 +537,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region UpdateBlobAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UpdateBlobAsync_WithNewMetadata_ShouldUpdateBlob()
     {
         // Arrange
@@ -564,7 +566,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.Tags.Should().BeEquivalentTo(updatedProperties.Tags);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UpdateBlobAsync_WhenBlobDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -579,7 +581,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UpdateBlobAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -596,7 +598,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region UploadCheckAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCheckAsync_WhenContainerExistsAndBlobDoesNotExist_ShouldNotThrow()
     {
         // Arrange
@@ -610,7 +612,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().NotThrowAsync();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCheckAsync_WhenBlobExists_ShouldThrowResourceExistsException()
     {
         // Arrange
@@ -624,7 +626,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceExistsException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCheckAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -640,7 +642,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region UploadBlockAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadBlockAsync_WithValidBlock_ShouldUploadBlock()
     {
         // Arrange
@@ -660,7 +662,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadBlockAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -678,7 +680,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
     #endregion
 
     #region UploadCommitAsync
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCommitAsync_WithValidBlocks_ShouldCommitBlob()
     {
         // Arrange
@@ -718,7 +720,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         downloadedContent.Should().Be("First Second");
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCommitAsync_WithEmptyBlockList_ShouldCreateEmptyBlob()
     {
         // Arrange
@@ -740,7 +742,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.ContentLength.Should().Be(0);
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCommitAsync_WhenContainerDoesNotExist_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -759,7 +761,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCommitAsync_WithNullContentTypeEncodingAndLanguage_ShouldUseDefaults()
     {
         // Arrange
@@ -791,7 +793,7 @@ public class AzuriteService_Tests : IClassFixture<AzuriteFixture>, IAsyncLifetim
         result.Metadata.Should().ContainKey("test");
     }
 
-    [Fact]
+    [Fact(Timeout = 60000)]
     public async Task UploadCommitAsync_WithSpecificContentTypeEncodingAndLanguage_ShouldUseProvidedValues()
     {
         // Arrange

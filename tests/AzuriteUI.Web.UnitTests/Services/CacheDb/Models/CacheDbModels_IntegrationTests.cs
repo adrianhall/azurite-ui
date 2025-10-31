@@ -26,7 +26,7 @@ public class CacheDbModels_IntegrationTests
 
     #region ContainerModel Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task ContainerModel_CanBeStoredAndRetrieved()
     {
         // Arrange
@@ -72,7 +72,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Metadata["key1"].Should().Be("value1");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task ContainerModel_CanBeDeleted()
     {
         // Arrange
@@ -95,7 +95,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task ContainerModel_WithBlobs_LoadsNavigationProperty()
     {
         // Arrange
@@ -141,7 +141,7 @@ public class CacheDbModels_IntegrationTests
 
     #region BlobModel Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task BlobModel_CanBeStoredAndRetrieved()
     {
         // Arrange
@@ -203,7 +203,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.RemainingRetentionDays.Should().Be(30);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task BlobModel_CanBeDeleted()
     {
         // Arrange
@@ -233,7 +233,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task BlobModel_WithContainer_LoadsNavigationProperty()
     {
         // Arrange
@@ -267,7 +267,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Container.PublicAccess.Should().Be(AzuritePublicAccess.Container);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task BlobModel_ForeignKey_EnforcesContainerExists()
     {
         // Arrange
@@ -289,7 +289,7 @@ public class CacheDbModels_IntegrationTests
 
     #region UploadModel Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadModel_CanBeStoredAndRetrieved()
     {
         // Arrange
@@ -342,7 +342,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Tags["environment"].Should().Be("test");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadModel_CanBeDeleted()
     {
         // Arrange
@@ -367,7 +367,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadModel_WithBlocks_LoadsNavigationProperty()
     {
         // Arrange
@@ -412,7 +412,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Blocks.Sum(b => b.BlockSize).Should().Be(3145728); // Total 3 MB
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadModel_Deletion_CascadesToBlocksIfConfigured()
     {
         // Arrange
@@ -450,7 +450,7 @@ public class CacheDbModels_IntegrationTests
 
     #region UploadBlockModel Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadBlockModel_CanBeStoredAndRetrieved()
     {
         // Arrange
@@ -493,7 +493,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.UploadedAt.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadBlockModel_CanBeDeleted()
     {
         // Arrange
@@ -525,7 +525,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadBlockModel_WithUpload_LoadsNavigationProperty()
     {
         // Arrange
@@ -562,7 +562,7 @@ public class CacheDbModels_IntegrationTests
         retrieved.Upload.ContentType.Should().Be("application/json");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task UploadBlockModel_ForeignKey_EnforcesUploadExists()
     {
         // Arrange
@@ -584,7 +584,7 @@ public class CacheDbModels_IntegrationTests
 
     #region Complex Relationship Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task ComplexScenario_ContainerWithMultipleBlobsAndUploads()
     {
         // Arrange

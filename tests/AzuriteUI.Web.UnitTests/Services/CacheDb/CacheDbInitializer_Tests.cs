@@ -35,7 +35,7 @@ public class CacheDbInitializer_Tests
 
     #region StartAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task StartAsync_ShouldInitializeDatabase()
     {
         // Arrange
@@ -54,7 +54,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task StartAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
@@ -78,7 +78,7 @@ public class CacheDbInitializer_Tests
 
     #region StopAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task StopAsync_ShouldCompleteSuccessfully()
     {
         // Arrange
@@ -98,7 +98,7 @@ public class CacheDbInitializer_Tests
 
     #region InitializeDatabaseAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task InitializeDatabaseAsync_WithNewDatabase_ShouldCreateSchema()
     {
         // Arrange
@@ -116,7 +116,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task InitializeDatabaseAsync_WithCurrentSchemaVersion_ShouldNotRecreateDatabase()
     {
         // Arrange
@@ -141,7 +141,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task InitializeDatabaseAsync_WithOldSchemaVersion_ShouldRecreateDatabase()
     {
         // Arrange
@@ -176,7 +176,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task InitializeDatabaseAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
@@ -199,7 +199,7 @@ public class CacheDbInitializer_Tests
 
     #region CreateSchemaAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CreateSchemaAsync_WithNewDatabase_ShouldCreateTables()
     {
         // Arrange
@@ -215,7 +215,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CreateSchemaAsync_WithExistingDatabase_ShouldNotRecreate()
     {
         // Arrange
@@ -235,7 +235,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CreateSchemaAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
@@ -256,7 +256,7 @@ public class CacheDbInitializer_Tests
 
     #region GetSchemaVersionAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetSchemaVersionAsync_WithNoSchemaVersion_ShouldReturnZero()
     {
         // Arrange
@@ -272,7 +272,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetSchemaVersionAsync_WithSchemaVersion_ShouldReturnVersion()
     {
         // Arrange
@@ -291,7 +291,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetSchemaVersionAsync_WithMultipleSchemaVersions_ShouldReturnLatest()
     {
         // Arrange
@@ -312,7 +312,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetSchemaVersionAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
@@ -334,7 +334,7 @@ public class CacheDbInitializer_Tests
 
     #region StoreCurrentSchemaVersionAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task StoreCurrentSchemaVersionAsync_ShouldStoreCurrentVersion()
     {
         // Arrange
@@ -351,7 +351,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task StoreCurrentSchemaVersionAsync_WithExistingVersion_ShouldReplaceVersion()
     {
         // Arrange
@@ -372,7 +372,7 @@ public class CacheDbInitializer_Tests
         context.Dispose();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task StoreCurrentSchemaVersionAsync_WithCancellationToken_ShouldRespectCancellation()
     {
         // Arrange
@@ -394,7 +394,7 @@ public class CacheDbInitializer_Tests
 
     #region Constant Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void CurrentSchemaVersion_ShouldBePositive()
     {
         // Arrange & Act & Assert

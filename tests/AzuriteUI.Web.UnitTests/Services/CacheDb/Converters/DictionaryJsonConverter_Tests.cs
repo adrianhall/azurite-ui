@@ -7,7 +7,7 @@ public class DictionaryJsonConverter_Tests
 {
     #region Constructor Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_ShouldCreateConverter()
     {
         // Arrange & Act
@@ -21,7 +21,7 @@ public class DictionaryJsonConverter_Tests
 
     #region Conversion Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_ShouldConvertEmptyDictionaryToJson()
     {
         // Arrange
@@ -35,7 +35,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().Be("{}");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_ShouldConvertDictionaryWithSingleItemToJson()
     {
         // Arrange
@@ -53,7 +53,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().Contain("value1");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_ShouldConvertDictionaryWithMultipleItemsToJson()
     {
         // Arrange
@@ -77,7 +77,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().Contain("value3");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_ShouldHandleSpecialCharactersInValues()
     {
         // Arrange
@@ -99,7 +99,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().Contain("key3");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_ShouldConvertEmptyJsonToDictionary()
     {
         // Arrange
@@ -114,7 +114,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_ShouldConvertJsonWithSingleItemToDictionary()
     {
         // Arrange
@@ -130,7 +130,7 @@ public class DictionaryJsonConverter_Tests
         result["key1"].Should().Be("value1");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_ShouldConvertJsonWithMultipleItemsToDictionary()
     {
         // Arrange
@@ -148,7 +148,7 @@ public class DictionaryJsonConverter_Tests
         result["key3"].Should().Be("value3");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_ShouldBeCaseInsensitive()
     {
         // Arrange
@@ -163,7 +163,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().ContainKey("Key1");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_WithNullJson_ShouldReturnEmptyDictionary()
     {
         // Arrange
@@ -178,7 +178,7 @@ public class DictionaryJsonConverter_Tests
         result.Should().BeEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void RoundTrip_ShouldPreserveDictionaryContents()
     {
         // Arrange
@@ -202,7 +202,7 @@ public class DictionaryJsonConverter_Tests
         roundTripped["key3"].Should().Be("value3");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void RoundTrip_WithEmptyDictionary_ShouldPreserveEmptyState()
     {
         // Arrange

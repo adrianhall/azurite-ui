@@ -15,10 +15,20 @@ public static class ConfigurationExtensions
     public static string GetRequiredConnectionString(this IConfiguration configuration, string name)
     {
         var connectionString = configuration.GetConnectionString(name);
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException($"Connection string '{name}' is not configured.");
-        }
-        return connectionString;
+        return string.IsNullOrWhiteSpace(connectionString)
+            ? throw new InvalidOperationException($"Connection string '{name}' is not configured.")
+            : connectionString;
+    }
+
+    /// <summary>
+    /// Retrieves a TimeSpan value from the configuration by key.
+    /// </summary>
+    /// <param name="configuration">The configuration to query.</param>
+    /// <param name="key">The key of the TimeSpan value.</param>
+    /// <returns>The TimeSpan value, or null if not found or invalid.</returns>
+    public static TimeSpan? GetTimeSpan(this IConfiguration configuration, string key)
+    {
+        var value = configuration[key];
+        return !string.IsNullOrWhiteSpace(value) && TimeSpan.TryParse(value, out var result) ? result : null;
     }
 }

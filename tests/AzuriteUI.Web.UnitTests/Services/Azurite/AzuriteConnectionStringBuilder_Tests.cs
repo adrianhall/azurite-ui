@@ -7,7 +7,7 @@ public class AzuriteConnectionStringBuilder_Tests
 {
     #region Constructor Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_ShouldCreateEmptyBuilder()
     {
         // Arrange & Act
@@ -22,7 +22,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region Parse Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithNullConnectionString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -35,7 +35,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithEmptyConnectionString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -48,7 +48,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithWhitespaceConnectionString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -61,7 +61,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithDevelopmentStorageString_ShouldReturnBuilderWithDefaultSettings()
     {
         // Arrange
@@ -80,7 +80,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["DefaultEndpointsProtocol"].Should().Be("http");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithDevelopmentStorageStringAndTrailingSemicolon_ShouldReturnBuilderWithDefaultSettings()
     {
         // Arrange
@@ -94,7 +94,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["AccountName"].Should().Be("devstoreaccount1");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithValidConnectionString_ShouldParseAllProperties()
     {
         // Arrange
@@ -112,7 +112,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["TableEndpoint"].Should().Be("http://localhost:10002/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithInvalidKeyValuePair_ShouldThrowFormatException()
     {
         // Arrange
@@ -126,7 +126,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*Invalid key-value pair*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Parse_WithUnknownKey_ShouldThrowFormatException()
     {
         // Arrange
@@ -144,7 +144,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region WithProtocol Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_WithHttp_ShouldSetProtocolToHttp()
     {
         // Arrange
@@ -158,7 +158,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["DefaultEndpointsProtocol"].Should().Be("http");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_WithHttps_ShouldSetProtocolToHttps()
     {
         // Arrange
@@ -172,7 +172,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["DefaultEndpointsProtocol"].Should().Be("https");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_WithUppercaseHttp_ShouldSetProtocolToLowercaseHttp()
     {
         // Arrange
@@ -185,7 +185,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["DefaultEndpointsProtocol"].Should().Be("http");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_WithNull_ShouldThrowArgumentException()
     {
         // Arrange
@@ -198,7 +198,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -211,7 +211,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_WithInvalidProtocol_ShouldThrowArgumentException()
     {
         // Arrange
@@ -225,7 +225,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*must be either 'http' or 'https'*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithProtocol_CalledTwice_ShouldThrowArgumentException()
     {
         // Arrange
@@ -244,7 +244,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region WithAccountName Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithValidName_ShouldSetAccountName()
     {
         // Arrange
@@ -258,7 +258,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["AccountName"].Should().Be("testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithMinimumLength_ShouldSetAccountName()
     {
         // Arrange
@@ -271,7 +271,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["AccountName"].Should().Be("abc");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithMaximumLength_ShouldSetAccountName()
     {
         // Arrange
@@ -285,7 +285,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["AccountName"].Should().Be(accountName);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithNull_ShouldThrowArgumentException()
     {
         // Arrange
@@ -298,7 +298,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -311,7 +311,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithTooShortName_ShouldThrowArgumentException()
     {
         // Arrange
@@ -325,7 +325,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*must be 3-24 characters*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithTooLongName_ShouldThrowArgumentException()
     {
         // Arrange
@@ -339,7 +339,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*must be 3-24 characters*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithUppercaseLetter_ShouldThrowArgumentException()
     {
         // Arrange
@@ -353,7 +353,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*lowercase letters and numbers*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_StartingWithNumber_ShouldThrowArgumentException()
     {
         // Arrange
@@ -367,7 +367,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*start with a lowercase letter*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_WithSpecialCharacters_ShouldThrowArgumentException()
     {
         // Arrange
@@ -381,7 +381,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*lowercase letters and numbers*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountName_CalledTwice_ShouldThrowArgumentException()
     {
         // Arrange
@@ -400,7 +400,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region WithAccountKey Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountKey_WithValidBase64Key_ShouldSetAccountKey()
     {
         // Arrange
@@ -415,7 +415,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["AccountKey"].Should().Be(validKey);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountKey_WithLongBase64Key_ShouldSetAccountKey()
     {
         // Arrange
@@ -429,7 +429,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["AccountKey"].Should().Be(validKey);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountKey_WithNull_ShouldThrowArgumentException()
     {
         // Arrange
@@ -442,7 +442,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountKey_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -455,7 +455,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountKey_WithInvalidBase64_ShouldThrowArgumentException()
     {
         // Arrange
@@ -469,7 +469,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*valid base64-encoded string*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithAccountKey_CalledTwice_ShouldThrowArgumentException()
     {
         // Arrange
@@ -488,7 +488,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region WithBlobEndpoint Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_WithValidHttpUri_ShouldSetBlobEndpoint()
     {
         // Arrange
@@ -503,7 +503,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["BlobEndpoint"].Should().Be(endpoint);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_WithValidHttpsUri_ShouldSetBlobEndpoint()
     {
         // Arrange
@@ -517,7 +517,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["BlobEndpoint"].Should().Be(endpoint);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_WithNull_ShouldThrowArgumentException()
     {
         // Arrange
@@ -530,7 +530,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -543,7 +543,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_WithInvalidUri_ShouldThrowArgumentException()
     {
         // Arrange
@@ -557,7 +557,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*valid URI*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_WithFtpProtocol_ShouldThrowArgumentException()
     {
         // Arrange
@@ -571,7 +571,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*http or https protocol*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithBlobEndpoint_CalledTwice_ShouldThrowArgumentException()
     {
         // Arrange
@@ -590,7 +590,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region WithQueueEndpoint Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_WithValidHttpUri_ShouldSetQueueEndpoint()
     {
         // Arrange
@@ -605,7 +605,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["QueueEndpoint"].Should().Be(endpoint);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_WithValidHttpsUri_ShouldSetQueueEndpoint()
     {
         // Arrange
@@ -619,7 +619,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["QueueEndpoint"].Should().Be(endpoint);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_WithNull_ShouldThrowArgumentException()
     {
         // Arrange
@@ -632,7 +632,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -645,7 +645,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_WithInvalidUri_ShouldThrowArgumentException()
     {
         // Arrange
@@ -659,7 +659,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*valid URI*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_WithFtpProtocol_ShouldThrowArgumentException()
     {
         // Arrange
@@ -673,7 +673,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*http or https protocol*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithQueueEndpoint_CalledTwice_ShouldThrowArgumentException()
     {
         // Arrange
@@ -692,7 +692,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region WithTableEndpoint Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_WithValidHttpUri_ShouldSetTableEndpoint()
     {
         // Arrange
@@ -707,7 +707,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["TableEndpoint"].Should().Be(endpoint);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_WithValidHttpsUri_ShouldSetTableEndpoint()
     {
         // Arrange
@@ -721,7 +721,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties["TableEndpoint"].Should().Be(endpoint);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_WithNull_ShouldThrowArgumentException()
     {
         // Arrange
@@ -734,7 +734,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -747,7 +747,7 @@ public class AzuriteConnectionStringBuilder_Tests
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_WithInvalidUri_ShouldThrowArgumentException()
     {
         // Arrange
@@ -761,7 +761,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*valid URI*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_WithFtpProtocol_ShouldThrowArgumentException()
     {
         // Arrange
@@ -775,7 +775,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*http or https protocol*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void WithTableEndpoint_CalledTwice_ShouldThrowArgumentException()
     {
         // Arrange
@@ -794,7 +794,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region ToString Method Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithAllRequiredProperties_ShouldReturnValidConnectionString()
     {
         // Arrange
@@ -813,7 +813,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().Contain("BlobEndpoint=http://localhost:10000/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithAllProperties_ShouldReturnValidConnectionString()
     {
         // Arrange
@@ -837,7 +837,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().Contain("TableEndpoint=https://localhost:10002/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithoutDefaultEndpointsProtocol_ShouldDeriveFromBlobEndpoint()
     {
         // Arrange
@@ -853,7 +853,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().Contain("DefaultEndpointsProtocol=https");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithoutAccountName_ShouldThrowFormatException()
     {
         // Arrange
@@ -869,7 +869,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*missing required properties*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithoutAccountKey_ShouldThrowFormatException()
     {
         // Arrange
@@ -885,7 +885,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*missing required properties*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithoutBlobEndpoint_ShouldThrowFormatException()
     {
         // Arrange
@@ -901,7 +901,7 @@ public class AzuriteConnectionStringBuilder_Tests
             .WithMessage("*missing required properties*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithOptionalQueueEndpoint_ShouldIncludeQueueEndpoint()
     {
         // Arrange
@@ -918,7 +918,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().Contain("QueueEndpoint=http://localhost:10001/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithoutOptionalQueueEndpoint_ShouldNotIncludeQueueEndpoint()
     {
         // Arrange
@@ -934,7 +934,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().NotContain("QueueEndpoint");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithOptionalTableEndpoint_ShouldIncludeTableEndpoint()
     {
         // Arrange
@@ -951,7 +951,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().Contain("TableEndpoint=http://localhost:10002/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ToString_WithoutOptionalTableEndpoint_ShouldNotIncludeTableEndpoint()
     {
         // Arrange
@@ -971,7 +971,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region Fluent API / Chaining Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void FluentAPI_ShouldAllowMethodChaining()
     {
         // Arrange & Act
@@ -988,7 +988,7 @@ public class AzuriteConnectionStringBuilder_Tests
         builder._properties.Should().HaveCount(6);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseAndModify_ShouldThrowWhenAttemptingToSetExistingProperty()
     {
         // Arrange
@@ -1007,7 +1007,7 @@ public class AzuriteConnectionStringBuilder_Tests
 
     #region Round-trip Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void RoundTrip_ParseAndToString_ShouldProduceSameValues()
     {
         // Arrange
@@ -1024,7 +1024,7 @@ public class AzuriteConnectionStringBuilder_Tests
         result.Should().Contain("BlobEndpoint=http://localhost:10000/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void RoundTrip_BuildAndParse_ShouldProduceSameValues()
     {
         // Arrange

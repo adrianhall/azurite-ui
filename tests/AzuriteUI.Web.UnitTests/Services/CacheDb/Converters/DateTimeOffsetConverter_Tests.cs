@@ -7,7 +7,7 @@ public class DateTimeOffsetConverter_Tests
 {
     #region Constructor Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_ShouldCreateConverter()
     {
         // Arrange & Act
@@ -21,7 +21,7 @@ public class DateTimeOffsetConverter_Tests
 
     #region Conversion Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_ShouldConvertDateTimeOffsetToIso8601String()
     {
         // Arrange
@@ -35,7 +35,7 @@ public class DateTimeOffsetConverter_Tests
         result.Should().Be("2025-10-29T14:30:45.123Z");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_WithNonUtcOffset_ShouldConvertToUtcBeforeFormatting()
     {
         // Arrange
@@ -49,7 +49,7 @@ public class DateTimeOffsetConverter_Tests
         result.Should().Be("2025-10-29T09:30:45.123Z");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_WithMinValue_ShouldConvertSuccessfully()
     {
         // Arrange
@@ -64,7 +64,7 @@ public class DateTimeOffsetConverter_Tests
         result.Should().EndWith("Z");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Convert_WithMaxValue_ShouldConvertSuccessfully()
     {
         // Arrange
@@ -79,7 +79,7 @@ public class DateTimeOffsetConverter_Tests
         result.Should().EndWith("Z");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_ShouldConvertIso8601StringToDateTimeOffset()
     {
         // Arrange
@@ -100,7 +100,7 @@ public class DateTimeOffsetConverter_Tests
         result.Offset.Should().Be(TimeSpan.Zero);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertBack_WithDifferentFormat_ShouldParseSuccessfully()
     {
         // Arrange
@@ -116,7 +116,7 @@ public class DateTimeOffsetConverter_Tests
         result.Day.Should().Be(29);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void RoundTrip_ShouldPreserveUtcDateTime()
     {
         // Arrange
@@ -131,7 +131,7 @@ public class DateTimeOffsetConverter_Tests
         roundTripped.Should().Be(original);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void RoundTrip_WithNonUtcOffset_ShouldPreserveInstantInTime()
     {
         // Arrange
@@ -150,7 +150,7 @@ public class DateTimeOffsetConverter_Tests
 
     #region Format Constant Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Format_ShouldBeIso8601WithMilliseconds()
     {
         // Arrange & Act & Assert

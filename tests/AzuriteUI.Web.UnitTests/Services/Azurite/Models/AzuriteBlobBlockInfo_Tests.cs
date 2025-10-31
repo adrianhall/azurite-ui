@@ -7,7 +7,7 @@ public class AzuriteBlobBlockInfo_Tests
 {
     #region IsSuccess Property
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode200_ShouldReturnTrue()
     {
         // Arrange
@@ -24,7 +24,7 @@ public class AzuriteBlobBlockInfo_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode201_ShouldReturnTrue()
     {
         // Arrange
@@ -41,7 +41,7 @@ public class AzuriteBlobBlockInfo_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode299_ShouldReturnTrue()
     {
         // Arrange
@@ -58,7 +58,7 @@ public class AzuriteBlobBlockInfo_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode199_ShouldReturnFalse()
     {
         // Arrange
@@ -75,7 +75,7 @@ public class AzuriteBlobBlockInfo_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode300_ShouldReturnFalse()
     {
         // Arrange
@@ -92,7 +92,7 @@ public class AzuriteBlobBlockInfo_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode400_ShouldReturnFalse()
     {
         // Arrange
@@ -109,7 +109,7 @@ public class AzuriteBlobBlockInfo_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode500_ShouldReturnFalse()
     {
         // Arrange
@@ -130,7 +130,7 @@ public class AzuriteBlobBlockInfo_Tests
 
     #region Property Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Properties_ShouldBeSettable()
     {
         // Arrange
@@ -152,7 +152,7 @@ public class AzuriteBlobBlockInfo_Tests
         blockInfo.StatusCode.Should().Be(statusCode);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ContentMD5_CanBeNull()
     {
         // Arrange & Act

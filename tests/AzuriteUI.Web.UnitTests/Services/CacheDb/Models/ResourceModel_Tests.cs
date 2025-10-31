@@ -12,7 +12,7 @@ public class ResourceModel_Tests
 
     #region Equals Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Equals_WithSameNameAndETag_ShouldReturnTrue()
     {
         // Arrange
@@ -34,7 +34,7 @@ public class ResourceModel_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Equals_WithDifferentName_ShouldReturnFalse()
     {
         // Arrange
@@ -56,7 +56,7 @@ public class ResourceModel_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Equals_WithDifferentETag_ShouldReturnFalse()
     {
         // Arrange
@@ -78,7 +78,7 @@ public class ResourceModel_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Equals_WithNull_ShouldReturnFalse()
     {
         // Arrange
@@ -95,7 +95,7 @@ public class ResourceModel_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Equals_WithSelf_ShouldReturnTrue()
     {
         // Arrange
@@ -112,7 +112,7 @@ public class ResourceModel_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Equals_WithDifferentOtherProperties_ShouldReturnTrue()
     {
         // Arrange
@@ -144,7 +144,7 @@ public class ResourceModel_Tests
 
     #region Object.Equals Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ObjectEquals_WithSameNameAndETag_ShouldReturnTrue()
     {
         // Arrange
@@ -166,7 +166,7 @@ public class ResourceModel_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ObjectEquals_WithDifferentType_ShouldReturnFalse()
     {
         // Arrange
@@ -184,7 +184,7 @@ public class ResourceModel_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ObjectEquals_WithNull_ShouldReturnFalse()
     {
         // Arrange
@@ -206,7 +206,7 @@ public class ResourceModel_Tests
 
     #region GetHashCode Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void GetHashCode_WithSameNameAndETag_ShouldReturnSameHashCode()
     {
         // Arrange
@@ -229,7 +229,7 @@ public class ResourceModel_Tests
         hashCode1.Should().Be(hashCode2);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void GetHashCode_WithDifferentName_ShouldReturnDifferentHashCode()
     {
         // Arrange
@@ -252,7 +252,7 @@ public class ResourceModel_Tests
         hashCode1.Should().NotBe(hashCode2);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void GetHashCode_WithDifferentETag_ShouldReturnDifferentHashCode()
     {
         // Arrange
@@ -275,7 +275,7 @@ public class ResourceModel_Tests
         hashCode1.Should().NotBe(hashCode2);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void GetHashCode_CalledMultipleTimes_ShouldReturnSameValue()
     {
         // Arrange
@@ -299,7 +299,7 @@ public class ResourceModel_Tests
 
     #region Property Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Properties_ShouldHaveDefaultValues()
     {
         // Arrange & Act
@@ -318,7 +318,7 @@ public class ResourceModel_Tests
         model.RemainingRetentionDays.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Properties_ShouldBeSettable()
     {
         // Arrange

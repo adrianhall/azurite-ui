@@ -7,7 +7,7 @@ public class AzuriteBlobDownloadResult_Tests
 {
     #region IsSuccess Property
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode200_ShouldReturnTrue()
     {
         // Arrange
@@ -23,7 +23,7 @@ public class AzuriteBlobDownloadResult_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode206_ShouldReturnTrue()
     {
         // Arrange
@@ -39,7 +39,7 @@ public class AzuriteBlobDownloadResult_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode299_ShouldReturnTrue()
     {
         // Arrange
@@ -55,7 +55,7 @@ public class AzuriteBlobDownloadResult_Tests
         result.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode199_ShouldReturnFalse()
     {
         // Arrange
@@ -71,7 +71,7 @@ public class AzuriteBlobDownloadResult_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode300_ShouldReturnFalse()
     {
         // Arrange
@@ -87,7 +87,7 @@ public class AzuriteBlobDownloadResult_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode404_ShouldReturnFalse()
     {
         // Arrange
@@ -103,7 +103,7 @@ public class AzuriteBlobDownloadResult_Tests
         result.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void IsSuccess_WithStatusCode500_ShouldReturnFalse()
     {
         // Arrange
@@ -123,7 +123,7 @@ public class AzuriteBlobDownloadResult_Tests
 
     #region Property Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Properties_ShouldBeSettable()
     {
         // Arrange
@@ -151,7 +151,7 @@ public class AzuriteBlobDownloadResult_Tests
         downloadResult.StatusCode.Should().Be(statusCode);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Properties_CanBeNull()
     {
         // Arrange & Act
@@ -171,7 +171,7 @@ public class AzuriteBlobDownloadResult_Tests
         downloadResult.ContentType.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ContentLength_SupportsLargeValues()
     {
         // Arrange

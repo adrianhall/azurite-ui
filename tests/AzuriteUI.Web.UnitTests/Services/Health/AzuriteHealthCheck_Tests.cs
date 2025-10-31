@@ -22,7 +22,7 @@ public class AzuriteHealthCheck_Tests
 
     #region CheckHealthAsync
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CheckHealthAsync_WhenServiceIsHealthy_ReturnsHealthyResult()
     {
         // Arrange
@@ -47,7 +47,7 @@ public class AzuriteHealthCheck_Tests
         result.Data["ResponseTime"].Should().Be(expectedResponseTime);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CheckHealthAsync_WhenServiceIsHealthyWithNullResponseTime_ReturnsHealthyResultWithZeroResponseTime()
     {
         // Arrange
@@ -68,7 +68,7 @@ public class AzuriteHealthCheck_Tests
         result.Data["ResponseTime"].Should().Be(0L);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CheckHealthAsync_WhenServiceIsUnhealthy_ReturnsUnhealthyResult()
     {
         // Arrange
@@ -93,7 +93,7 @@ public class AzuriteHealthCheck_Tests
         result.Data["ErrorMessage"].Should().Be(expectedErrorMessage);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CheckHealthAsync_WhenServiceIsUnhealthyWithNullErrorMessage_ReturnsUnhealthyResultWithDefaultError()
     {
         // Arrange
@@ -114,7 +114,7 @@ public class AzuriteHealthCheck_Tests
         result.Data["ErrorMessage"].Should().Be("Unknown error");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task CheckHealthAsync_PassesCancellationTokenToService()
     {
         // Arrange

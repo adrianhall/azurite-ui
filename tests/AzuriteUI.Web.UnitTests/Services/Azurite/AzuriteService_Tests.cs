@@ -3,146 +3,144 @@ using Azure.Storage.Blobs.Models;
 using AzuriteUI.Web.Services.Azurite;
 using AzuriteUI.Web.Services.Azurite.Exceptions;
 using AzuriteUI.Web.Services.Azurite.Models;
+using AzuriteUI.Web.UnitTests.Helpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using NSubstitute;
+using Microsoft.Extensions.Logging.Testing;
 
 namespace AzuriteUI.Web.UnitTests.Services.Azurite;
 
 [ExcludeFromCodeCoverage]
 public class AzuriteService_Tests
 {
+    private readonly FakeLogger<AzuriteService> _logger = new();
+
     #region Constructor Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithValidConnectionString_ShouldCreateInstance()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
 
         // Act
-        var service = new AzuriteService(connectionString, logger);
+        var service = new AzuriteService(connectionString, _logger);
 
         // Assert
         service.Should().NotBeNull();
         service.ConnectionString.Should().NotBeNullOrWhiteSpace();
-        service.Logger.Should().BeSameAs(logger);
+        service.Logger.Should().BeSameAs(_logger);
         service.ServiceClient.Should().NotBeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithNullConnectionString_ShouldThrowArgumentException()
     {
         // Arrange
         string? connectionString = null;
-        var logger = Substitute.For<ILogger<AzuriteService>>();
 
         // Act
-        Action act = () => new AzuriteService(connectionString!, logger);
+        Action act = () => new AzuriteService(connectionString!, _logger);
 
         // Assert
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithEmptyConnectionString_ShouldThrowArgumentException()
     {
         // Arrange
         var connectionString = "";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
 
         // Act
-        Action act = () => new AzuriteService(connectionString, logger);
+        Action act = () => new AzuriteService(connectionString, _logger);
 
         // Assert
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithWhitespaceConnectionString_ShouldThrowArgumentException()
     {
         // Arrange
         var connectionString = "   ";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
 
         // Act
-        Action act = () => new AzuriteService(connectionString, logger);
+        Action act = () => new AzuriteService(connectionString, _logger);
 
         // Assert
         act.Should().Throw<ArgumentException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithNullLogger_ShouldThrowArgumentNullException()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        ILogger<AzuriteService>? logger = null;
 
         // Act
-        Action act = () => new AzuriteService(connectionString, logger!);
+        Action act = () => new AzuriteService(connectionString, null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithInvalidConnectionString_ShouldThrowException()
     {
         // Arrange
         var connectionString = "InvalidConnectionString";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
 
         // Act
-        Action act = () => new AzuriteService(connectionString, logger);
+        Action act = () => new AzuriteService(connectionString, _logger);
 
         // Assert
         act.Should().Throw<Exception>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithConfiguration_ShouldCreateInstance()
     {
         // Arrange
-        var configuration = Substitute.For<IConfiguration>();
         var connectionString = "UseDevelopmentStorage=true;";
-        configuration.GetConnectionString("Azurite").Returns(connectionString);
-        var logger = Substitute.For<ILogger<AzuriteService>>();
+        var configuration = Utils.CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Azurite"] = connectionString
+        });
 
         // Act
-        var service = new AzuriteService(configuration, logger);
+        var service = new AzuriteService(configuration, _logger);
 
         // Assert
         service.Should().NotBeNull();
         service.ConnectionString.Should().NotBeNullOrWhiteSpace();
-        service.Logger.Should().BeSameAs(logger);
+        service.Logger.Should().BeSameAs(_logger);
         service.ServiceClient.Should().NotBeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithNullConfiguration_ShouldThrowArgumentNullException()
     {
-        // Arrange
-        IConfiguration? configuration = null;
-        var logger = Substitute.For<ILogger<AzuriteService>>();
-
         // Act
-        Action act = () => new AzuriteService(configuration!, logger);
+        IConfiguration configuration = null!;
+        Action act = () => new AzuriteService(configuration, _logger);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void Constructor_WithConfigurationAndNullLogger_ShouldThrowArgumentNullException()
     {
         // Arrange
-        var configuration = Substitute.For<IConfiguration>();
-        ILogger<AzuriteService>? logger = null;
+        var connectionString = "UseDevelopmentStorage=true;";
+        var configuration = Utils.CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Azurite"] = connectionString
+        });
 
         // Act
-        Action act = () => new AzuriteService(configuration, logger!);
+        Action act = () => new AzuriteService(configuration, null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
@@ -152,7 +150,7 @@ public class AzuriteService_Tests
 
     #region ConvertAzuriteException Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertAzuriteException_With404Status_ShouldReturnResourceNotFoundException()
     {
         // Arrange
@@ -169,7 +167,7 @@ public class AzuriteService_Tests
         typedResult.InnerException.Should().BeSameAs(requestFailedException);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertAzuriteException_With409Status_ShouldReturnResourceExistsException()
     {
         // Arrange
@@ -186,7 +184,7 @@ public class AzuriteService_Tests
         typedResult.InnerException.Should().BeSameAs(requestFailedException);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertAzuriteException_With416Status_ShouldReturnRangeNotSatisfiableException()
     {
         // Arrange
@@ -201,7 +199,7 @@ public class AzuriteService_Tests
         typedResult.InnerException.Should().BeSameAs(requestFailedException);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertAzuriteException_WithOtherStatus_ShouldReturnAzuriteServiceException()
     {
         // Arrange
@@ -217,7 +215,7 @@ public class AzuriteService_Tests
         typedResult.InnerException.Should().BeSameAs(requestFailedException);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertAzuriteException_WithNullResourceName_ShouldReturnExceptionWithNullResourceName()
     {
         // Arrange
@@ -236,7 +234,7 @@ public class AzuriteService_Tests
 
     #region ConvertToEncryptionScope Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToEncryptionScope_WithNullDefaultEncryptionScope_ShouldReturnNull()
     {
         // Arrange
@@ -250,7 +248,7 @@ public class AzuriteService_Tests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToEncryptionScope_WithEmptyDefaultEncryptionScope_ShouldReturnNull()
     {
         // Arrange
@@ -264,7 +262,7 @@ public class AzuriteService_Tests
         result.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToEncryptionScope_WithValidDefaultEncryptionScope_ShouldReturnEncryptionScopeOptions()
     {
         // Arrange
@@ -280,7 +278,7 @@ public class AzuriteService_Tests
         result.PreventEncryptionScopeOverride.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToEncryptionScope_WithNullPreventEncryptionScopeOverride_ShouldDefaultToFalse()
     {
         // Arrange
@@ -295,7 +293,7 @@ public class AzuriteService_Tests
         result!.PreventEncryptionScopeOverride.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToEncryptionScope_WithFalsePreventEncryptionScopeOverride_ShouldSetToFalse()
     {
         // Arrange
@@ -314,7 +312,7 @@ public class AzuriteService_Tests
 
     #region ConvertToPublicAccessType Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToPublicAccessType_WithNone_ShouldReturnPublicAccessTypeNone()
     {
         // Arrange
@@ -327,7 +325,7 @@ public class AzuriteService_Tests
         result.Should().Be(PublicAccessType.None);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToPublicAccessType_WithBlob_ShouldReturnPublicAccessTypeBlob()
     {
         // Arrange
@@ -340,7 +338,7 @@ public class AzuriteService_Tests
         result.Should().Be(PublicAccessType.Blob);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToPublicAccessType_WithContainer_ShouldReturnPublicAccessTypeBlobContainer()
     {
         // Arrange
@@ -353,7 +351,7 @@ public class AzuriteService_Tests
         result.Should().Be(PublicAccessType.BlobContainer);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ConvertToPublicAccessType_WithNull_ShouldReturnPublicAccessTypeNone()
     {
         // Arrange
@@ -370,7 +368,7 @@ public class AzuriteService_Tests
 
     #region HandleRequestFailedExceptionAsync<T> Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_WithSuccessfulFunc_ShouldReturnResult()
     {
         // Arrange
@@ -384,7 +382,7 @@ public class AzuriteService_Tests
         result.Should().Be(expectedResult);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_WithRequestFailedExceptionStatus404_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -398,7 +396,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_WithRequestFailedExceptionStatus409_ShouldThrowResourceExistsException()
     {
         // Arrange
@@ -412,7 +410,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<ResourceExistsException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_WithRequestFailedExceptionStatus416_ShouldThrowRangeNotSatisfiableException()
     {
         // Arrange
@@ -426,7 +424,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<RangeNotSatisfiableException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_WithRequestFailedExceptionOtherStatus_ShouldThrowAzuriteServiceException()
     {
         // Arrange
@@ -440,7 +438,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<AzuriteServiceException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_WithOtherException_ShouldPropagateException()
     {
         // Arrange
@@ -460,7 +458,7 @@ public class AzuriteService_Tests
 
     #region HandleRequestFailedExceptionAsync (void) Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_Void_WithSuccessfulFunc_ShouldComplete()
     {
         // Arrange
@@ -478,7 +476,7 @@ public class AzuriteService_Tests
         executed.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_Void_WithRequestFailedExceptionStatus404_ShouldThrowResourceNotFoundException()
     {
         // Arrange
@@ -492,7 +490,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<ResourceNotFoundException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_Void_WithRequestFailedExceptionStatus409_ShouldThrowResourceExistsException()
     {
         // Arrange
@@ -506,7 +504,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<ResourceExistsException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_Void_WithRequestFailedExceptionStatus416_ShouldThrowRangeNotSatisfiableException()
     {
         // Arrange
@@ -520,7 +518,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<RangeNotSatisfiableException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_Void_WithRequestFailedExceptionOtherStatus_ShouldThrowAzuriteServiceException()
     {
         // Arrange
@@ -534,7 +532,7 @@ public class AzuriteService_Tests
         await act.Should().ThrowAsync<AzuriteServiceException>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task HandleRequestFailedExceptionAsync_Void_WithOtherException_ShouldPropagateException()
     {
         // Arrange
@@ -554,7 +552,7 @@ public class AzuriteService_Tests
 
     #region ParseHttpRange Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithValidClosedRange_ShouldReturnHttpRange()
     {
         // Arrange
@@ -568,7 +566,7 @@ public class AzuriteService_Tests
         result.Length.Should().Be(500);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithValidOpenEndedRange_ShouldReturnHttpRangeWithNullLength()
     {
         // Arrange
@@ -582,7 +580,7 @@ public class AzuriteService_Tests
         result.Length.Should().BeNull();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithLargeRange_ShouldReturnCorrectHttpRange()
     {
         // Arrange
@@ -596,7 +594,7 @@ public class AzuriteService_Tests
         result.Length.Should().Be(2000);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithSingleByteRange_ShouldReturnHttpRangeWithLengthOne()
     {
         // Arrange
@@ -610,7 +608,7 @@ public class AzuriteService_Tests
         result.Length.Should().Be(1);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithNullString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -624,7 +622,7 @@ public class AzuriteService_Tests
             .WithMessage("*Invalid Range header format*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithEmptyString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -638,7 +636,7 @@ public class AzuriteService_Tests
             .WithMessage("*Invalid Range header format*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithWhitespaceString_ShouldThrowArgumentException()
     {
         // Arrange
@@ -652,7 +650,7 @@ public class AzuriteService_Tests
             .WithMessage("*Invalid Range header format*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithoutBytesPrefix_ShouldThrowArgumentException()
     {
         // Arrange
@@ -666,7 +664,7 @@ public class AzuriteService_Tests
             .WithMessage("*Invalid Range header format*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithInvalidFormat_ShouldThrowArgumentException()
     {
         // Arrange
@@ -680,7 +678,7 @@ public class AzuriteService_Tests
             .WithMessage("*Invalid Range header format*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithSuffixRange_ShouldThrowArgumentException()
     {
         // Arrange
@@ -694,7 +692,7 @@ public class AzuriteService_Tests
             .WithMessage("*Suffix ranges*are not supported*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithMultipleRanges_ShouldThrowArgumentException()
     {
         // Arrange
@@ -708,7 +706,7 @@ public class AzuriteService_Tests
             .WithMessage("*Only a single range is supported*");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ParseHttpRange_WithCaseInsensitiveBytesPrefix_ShouldReturnHttpRange()
     {
         // Arrange
@@ -726,7 +724,7 @@ public class AzuriteService_Tests
 
     #region ValidateConnectionString Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ValidateConnectionString_WithValidConnectionString_ShouldReturnValidConnectionString()
     {
         // Arrange
@@ -740,7 +738,7 @@ public class AzuriteService_Tests
         result.Should().Contain("AccountName=devstoreaccount1");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ValidateConnectionString_WithFullConnectionString_ShouldReturnFormattedConnectionString()
     {
         // Arrange
@@ -756,7 +754,7 @@ public class AzuriteService_Tests
         result.Should().Contain("BlobEndpoint=http://localhost:10000/testaccount");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ValidateConnectionString_WithInvalidConnectionString_ShouldThrowException()
     {
         // Arrange
@@ -769,7 +767,7 @@ public class AzuriteService_Tests
         act.Should().Throw<Exception>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ValidateConnectionString_WithEmptyConnectionString_ShouldThrowException()
     {
         // Arrange
@@ -782,7 +780,7 @@ public class AzuriteService_Tests
         act.Should().Throw<Exception>();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public void ValidateConnectionString_WithNullConnectionString_ShouldThrowException()
     {
         // Arrange
@@ -799,13 +797,13 @@ public class AzuriteService_Tests
 
     #region GetHealthStatusAsync Tests
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetHealthStatusAsync_WithHealthyService_ShouldReturnHealthyStatus()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
-        var service = new TestableAzuriteService(connectionString, logger, shouldThrow: false);
+        
+        var service = new TestableAzuriteService(connectionString, _logger, shouldThrow: false);
 
         // Act
         var result = await service.GetHealthStatusAsync();
@@ -819,14 +817,14 @@ public class AzuriteService_Tests
         result.ErrorMessage.Should().BeNullOrEmpty();
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetHealthStatusAsync_WithUnhealthyService_ShouldReturnUnhealthyStatus()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
+        
         var exceptionMessage = "Service unavailable";
-        var service = new TestableAzuriteService(connectionString, logger, shouldThrow: true, exceptionMessage: exceptionMessage);
+        var service = new TestableAzuriteService(connectionString, _logger, shouldThrow: true, exceptionMessage: exceptionMessage);
 
         // Act
         var result = await service.GetHealthStatusAsync();
@@ -839,35 +837,29 @@ public class AzuriteService_Tests
         result.ErrorMessage.Should().Be(exceptionMessage);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetHealthStatusAsync_WithException_ShouldLogError()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
+        
         var exceptionMessage = "Connection failed";
-        var service = new TestableAzuriteService(connectionString, logger, shouldThrow: true, exceptionMessage: exceptionMessage);
+        var service = new TestableAzuriteService(connectionString, _logger, shouldThrow: true, exceptionMessage: exceptionMessage);
 
         // Act
         var result = await service.GetHealthStatusAsync();
 
         // Assert
         result.IsHealthy.Should().BeFalse();
-        logger.Received(1).Log(
-            LogLevel.Error,
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception?, string>>());
+        _logger.Collector.GetSnapshot().Should().ContainSingle(log => log.Level == LogLevel.Error);
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetHealthStatusAsync_WithRequestFailedException_ShouldCaptureErrorDetails()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
-        var service = new TestableAzuriteService(connectionString, logger, shouldThrow: true, throwRequestFailed: true);
+        var service = new TestableAzuriteService(connectionString, _logger, shouldThrow: true, throwRequestFailed: true);
 
         // Act
         var result = await service.GetHealthStatusAsync();
@@ -879,13 +871,12 @@ public class AzuriteService_Tests
         result.ErrorMessage.Should().Contain("Service request failed");
     }
 
-    [Fact]
+    [Fact(Timeout = 15000)]
     public async Task GetHealthStatusAsync_WithException_ShouldNotSetResponseTime()
     {
         // Arrange
         var connectionString = "UseDevelopmentStorage=true;";
-        var logger = Substitute.For<ILogger<AzuriteService>>();
-        var service = new TestableAzuriteService(connectionString, logger, shouldThrow: true);
+        var service = new TestableAzuriteService(connectionString, _logger, shouldThrow: true);
 
         // Act
         var result = await service.GetHealthStatusAsync();

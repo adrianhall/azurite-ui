@@ -8,11 +8,38 @@ The unit tests are placed in the `tests/AzuriteUI.Web.UnitTests` project, and fo
 * Use AAA (Arrange-Act-Assert) format.
 * Decorate the test class with `[ExcludeFromCodeCoverage]`
 * Use AwesomeAssertions, which is API compatible with FluentAssertions.
-* Do not write tests for library implementation details.
-* Avoid testing exact error messages within logs and exception messages.
-* Do not write tests that test debug log output.
 * Use NSubstitute for mocking.
 * **DO NOT USE Moq or FluentAssertions** - these are forbidden libraries due to licensing.
+* Use Microsoft.Extensions.TimeProvider.Testing to test the ITimeProvider implementation.
+* Use an in-memory SQLite database for testing database context interactions.
+* Do not write tests for library implementation details.
+* Do not write tests to check exact error messages in exceptions.
+
+### Testing log messages
+
+* Avoid testing exact error messages within logs.
+* Do not write tests that test debug log output.
+* Use Microsoft.Extensions.Diagnostics.Testing TestLogger classes for checking logs.
+
+### Mocking IConfiguration and IServiceProvider
+
+* Do not mock IConfiguration or IServiceProvider
+* Build a concrete IConfiguration using a ConfigurationBuilder with an in-memory provider
+* Build a concrete IServiceProvider using a ServiceCollection when required
+
+### Helper Methods
+
+There are helper methods in Helpers/Utils.cs:
+
+* `CreateAsyncEnumerable<T>(IEnumerable<T> items)`
+* `CreateAsyncEnumerableWithException<T>(Exception exception)`
+* `CreateAsyncEnumerableWithExceptionAfterItems(int itemCount, Exception exception)`
+
+These should be used for creating `IAsyncEnumerable<T>` collections for testing purposes.
+
+## Time outs
+
+Add a 15 second timeout to each test that you write.
 
 ## Running tests
 
