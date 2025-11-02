@@ -43,7 +43,7 @@ public class CacheSyncService(CacheDbContext context, IAzuriteService service, I
                 {
                     logger.LogDebug("Processing container: {ContainerName}", container.Name);
 
-                    var storedContainer = await StoreContainerInContextAsync(container, cacheCopyId, cancellationToken);
+                    var storedContainer = await context.UpsertContainerAsync(container, cacheCopyId, cancellationToken);
                     long totalSize = 0L;
                     int blobCount = 0;
 
@@ -53,7 +53,7 @@ public class CacheSyncService(CacheDbContext context, IAzuriteService service, I
                         .Select(batch => Observable.FromAsync(async () =>
                         {
                             UpdateSizeAndCount(batch, ref totalSize, ref blobCount);
-                            await StoreBlobsInContextAsync(storedContainer.Name, batch, cacheCopyId, cancellationToken);
+                            await context.UpsertBlobsAsync(batch, storedContainer.Name, cacheCopyId, cancellationToken); 
                         }))
                         .Concat()
                         .LastOrDefaultAsync();
@@ -90,143 +90,6 @@ public class CacheSyncService(CacheDbContext context, IAzuriteService service, I
             logger.LogError(ex, "Cache synchronization failed");
             throw;
         }
-    }
-
-    /// <summary>
-    /// Stores a container in the database context.
-    /// </summary>
-    /// <param name="containerTransfer">The container transfer model from Azurite.</param>
-    /// <param name="cacheCopyId">The cache copy identifier for this sync operation.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>The stored container model.</returns>
-    internal async Task<ContainerModel> StoreContainerInContextAsync(
-        AzuriteContainerItem containerTransfer,
-        string cacheCopyId,
-        CancellationToken cancellationToken)
-    {
-        var existing = await context.Containers.FirstOrDefaultAsync(c => c.Name == containerTransfer.Name, cancellationToken);
-
-        if (existing is not null)
-        {
-            // Update existing container
-            existing.CachedCopyId = cacheCopyId;
-            existing.ETag = containerTransfer.ETag;
-            existing.HasLegalHold = containerTransfer.HasLegalHold;
-            existing.LastModified = containerTransfer.LastModified;
-            existing.Metadata = containerTransfer.Metadata;
-            existing.RemainingRetentionDays = containerTransfer.RemainingRetentionDays;
-            existing.DefaultEncryptionScope = containerTransfer.DefaultEncryptionScope;
-            existing.HasImmutabilityPolicy = containerTransfer.HasImmutabilityPolicy;
-            existing.HasImmutableStorageWithVersioning = containerTransfer.HasImmutableStorageWithVersioning;
-            existing.PublicAccess = containerTransfer.PublicAccess;
-            existing.PreventEncryptionScopeOverride = containerTransfer.PreventEncryptionScopeOverride;
-
-            context.Containers.Update(existing);
-        }
-        else
-        {
-            // Create new container
-            existing = new ContainerModel
-            {
-                Name = containerTransfer.Name,
-                CachedCopyId = cacheCopyId,
-                ETag = containerTransfer.ETag,
-                HasLegalHold = containerTransfer.HasLegalHold,
-                LastModified = containerTransfer.LastModified,
-                Metadata = containerTransfer.Metadata,
-                RemainingRetentionDays = containerTransfer.RemainingRetentionDays,
-                DefaultEncryptionScope = containerTransfer.DefaultEncryptionScope,
-                HasImmutabilityPolicy = containerTransfer.HasImmutabilityPolicy,
-                HasImmutableStorageWithVersioning = containerTransfer.HasImmutableStorageWithVersioning,
-                PublicAccess = containerTransfer.PublicAccess,
-                PreventEncryptionScopeOverride = containerTransfer.PreventEncryptionScopeOverride
-            };
-
-            await context.Containers.AddAsync(existing, cancellationToken);
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-        logger.LogDebug("Stored container: {ContainerName}", containerTransfer.Name);
-
-        return existing;
-    }
-
-    /// <summary>
-    /// Stores a batch of blobs in the database context.
-    /// </summary>
-    /// <param name="containerName">The name of the container holding these blobs.</param>
-    /// <param name="blobs">The batch of blob transfer models from Azurite.</param>
-    /// <param name="cacheCopyId">The cache copy identifier for this sync operation.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    internal async Task StoreBlobsInContextAsync(
-        string containerName,
-        IList<AzuriteBlobItem> blobs,
-        string cacheCopyId,
-        CancellationToken cancellationToken)
-    {
-        if (blobs.Count == 0)
-        {
-            return;
-        }
-
-        var blobNames = blobs.Select(b => b.Name).ToList();
-        var existingBlobs = await context.Blobs
-            .Where(b => b.ContainerName == containerName && blobNames.Contains(b.Name))
-            .ToDictionaryAsync(b => b.Name, cancellationToken);
-
-        foreach (var blob in blobs)
-        {
-            if (existingBlobs.TryGetValue(blob.Name, out var existing))
-            {
-                // Update existing blob
-                existing.CachedCopyId = cacheCopyId;
-                existing.ETag = blob.ETag;
-                existing.HasLegalHold = blob.HasLegalHold;
-                existing.LastModified = blob.LastModified;
-                existing.Metadata = blob.Metadata;
-                existing.RemainingRetentionDays = blob.RemainingRetentionDays;
-                existing.BlobType = blob.BlobType;
-                existing.ContentEncoding = blob.ContentEncoding;
-                existing.ContentLanguage = blob.ContentLanguage;
-                existing.ContentLength = blob.ContentLength;
-                existing.ContentType = blob.ContentType;
-                existing.CreatedOn = blob.CreatedOn ?? DateTimeOffset.MinValue;
-                existing.ExpiresOn = blob.ExpiresOn;
-                existing.LastAccessedOn = blob.LastAccessedOn;
-                existing.Tags = blob.Tags;
-
-                context.Blobs.Update(existing);
-            }
-            else
-            {
-                // Create new blob
-                var newBlob = new BlobModel
-                {
-                    Name = blob.Name,
-                    ContainerName = containerName,
-                    CachedCopyId = cacheCopyId,
-                    ETag = blob.ETag,
-                    HasLegalHold = blob.HasLegalHold,
-                    LastModified = blob.LastModified,
-                    Metadata = blob.Metadata,
-                    RemainingRetentionDays = blob.RemainingRetentionDays,
-                    BlobType = blob.BlobType,
-                    ContentEncoding = blob.ContentEncoding,
-                    ContentLanguage = blob.ContentLanguage,
-                    ContentLength = blob.ContentLength,
-                    ContentType = blob.ContentType,
-                    CreatedOn = blob.CreatedOn ?? DateTimeOffset.MinValue,
-                    ExpiresOn = blob.ExpiresOn,
-                    LastAccessedOn = blob.LastAccessedOn,
-                    Tags = blob.Tags
-                };
-
-                await context.Blobs.AddAsync(newBlob, cancellationToken);
-            }
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-        logger.LogDebug("Stored {BlobCount} blobs in container: {ContainerName}", blobs.Count, containerName);
     }
 
     /// <summary>
