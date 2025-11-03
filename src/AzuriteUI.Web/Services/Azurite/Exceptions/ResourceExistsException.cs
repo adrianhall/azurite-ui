@@ -5,7 +5,7 @@ namespace AzuriteUI.Web.Services.Azurite.Exceptions;
 /// <summary>
 /// An exception that is thrown when the resource being created already exists.
 /// </summary>
-public class ResourceExistsException : Exception
+public class ResourceExistsException : AzuriteServiceException
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceExistsException"/> class.
@@ -13,10 +13,11 @@ public class ResourceExistsException : Exception
     [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public ResourceExistsException()
     {
+        StatusCode = StatusCodes.Status409Conflict;
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResourceExistsException"/> class with 
+    /// Initializes a new instance of the <see cref="ResourceExistsException"/> class with
     /// a specified error message.
     /// </summary>
     /// <param name="message">The error message.</param>
@@ -24,6 +25,7 @@ public class ResourceExistsException : Exception
     public ResourceExistsException(string? message)
         : base(message)
     {
+        StatusCode = StatusCodes.Status409Conflict;
     }
 
     /// <summary>
@@ -36,6 +38,7 @@ public class ResourceExistsException : Exception
     public ResourceExistsException(string? message, Exception? innerException)
         : base(message, innerException)
     {
+        StatusCode = StatusCodes.Status409Conflict;
     }
 
     /// <summary>

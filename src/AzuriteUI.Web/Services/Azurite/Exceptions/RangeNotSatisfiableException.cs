@@ -6,7 +6,7 @@ namespace AzuriteUI.Web.Services.Azurite.Exceptions;
 /// An exception that is thrown when the resource being downloaded has a range that
 /// is outside the size of the resource.
 /// </summary>
-public class RangeNotSatisfiableException : Exception
+public class RangeNotSatisfiableException : AzuriteServiceException
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="RangeNotSatisfiableException"/> class.
@@ -14,10 +14,11 @@ public class RangeNotSatisfiableException : Exception
     [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public RangeNotSatisfiableException()
     {
+        StatusCode = StatusCodes.Status416RangeNotSatisfiable;
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RangeNotSatisfiableException"/> class with 
+    /// Initializes a new instance of the <see cref="RangeNotSatisfiableException"/> class with
     /// a specified error message.
     /// </summary>
     /// <param name="message">The error message.</param>
@@ -25,6 +26,7 @@ public class RangeNotSatisfiableException : Exception
     public RangeNotSatisfiableException(string? message)
         : base(message)
     {
+        StatusCode = StatusCodes.Status416RangeNotSatisfiable;
     }
 
     /// <summary>
@@ -37,5 +39,6 @@ public class RangeNotSatisfiableException : Exception
     public RangeNotSatisfiableException(string? message, Exception? innerException)
         : base(message, innerException)
     {
+        StatusCode = StatusCodes.Status416RangeNotSatisfiable;
     }
 }

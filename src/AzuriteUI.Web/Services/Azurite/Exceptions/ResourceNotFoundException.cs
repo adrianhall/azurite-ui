@@ -5,7 +5,7 @@ namespace AzuriteUI.Web.Services.Azurite.Exceptions;
 /// <summary>
 /// An exception that is thrown when the resource being accessed does not exist.
 /// </summary>
-public class ResourceNotFoundException : Exception
+public class ResourceNotFoundException : AzuriteServiceException
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ResourceNotFoundException"/> class.
@@ -13,10 +13,11 @@ public class ResourceNotFoundException : Exception
     [ExcludeFromCodeCoverage(Justification = "Standard exception constructor with no additional code")]
     public ResourceNotFoundException()
     {
+        StatusCode = StatusCodes.Status404NotFound;
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResourceNotFoundException"/> class with 
+    /// Initializes a new instance of the <see cref="ResourceNotFoundException"/> class with
     /// a specified error message.
     /// </summary>
     /// <param name="message">The error message.</param>
@@ -24,6 +25,7 @@ public class ResourceNotFoundException : Exception
     public ResourceNotFoundException(string? message)
         : base(message)
     {
+        StatusCode = StatusCodes.Status404NotFound;
     }
 
     /// <summary>
@@ -36,6 +38,7 @@ public class ResourceNotFoundException : Exception
     public ResourceNotFoundException(string? message, Exception? innerException)
         : base(message, innerException)
     {
+        StatusCode = StatusCodes.Status404NotFound;
     }
 
     /// <summary>
