@@ -337,6 +337,220 @@ public class CacheDbContext_Tests : SqliteDbTests
         result.CreatedOn.Should().Be(DateTimeOffset.MinValue);
     }
 
+    [Fact(Timeout = 15000)]
+    public async Task UpsertBlobAsync_WithNewBlob_ShouldUpdateContainerBlobCountAndTotalSize()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create container first due to foreign key constraint
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "container-etag",
+            LastModified = DateTimeOffset.UtcNow,
+            BlobCount = 0,
+            TotalSize = 0
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var blobItem = CreateBlobItem("new-blob.txt", contentLength: 2048);
+        var containerName = "test-container";
+        var cacheCopyId = Guid.NewGuid().ToString("N");
+
+        // Act
+        await context.UpsertBlobAsync(blobItem, containerName, cacheCopyId, CancellationToken.None);
+
+        // Assert
+        var updatedContainer = await context.Containers.FirstOrDefaultAsync(c => c.Name == containerName);
+        updatedContainer.Should().NotBeNull();
+        updatedContainer!.BlobCount.Should().Be(1);
+        updatedContainer.TotalSize.Should().Be(2048);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertBlobAsync_WithMultipleBlobs_ShouldUpdateContainerBlobCountAndTotalSize()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create container first due to foreign key constraint
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "container-etag",
+            LastModified = DateTimeOffset.UtcNow,
+            BlobCount = 0,
+            TotalSize = 0
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var blob1 = CreateBlobItem("blob1.txt", contentLength: 1024);
+        var blob2 = CreateBlobItem("blob2.txt", contentLength: 2048);
+        var blob3 = CreateBlobItem("blob3.txt", contentLength: 4096);
+        var cacheCopyId = Guid.NewGuid().ToString("N");
+
+        // Act
+        await context.UpsertBlobAsync(blob1, "test-container", cacheCopyId, CancellationToken.None);
+        await context.UpsertBlobAsync(blob2, "test-container", cacheCopyId, CancellationToken.None);
+        await context.UpsertBlobAsync(blob3, "test-container", cacheCopyId, CancellationToken.None);
+
+        // Assert
+        var updatedContainer = await context.Containers.FirstOrDefaultAsync(c => c.Name == "test-container");
+        updatedContainer.Should().NotBeNull();
+        updatedContainer!.BlobCount.Should().Be(3);
+        updatedContainer.TotalSize.Should().Be(7168); // 1024 + 2048 + 4096
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertBlobAsync_WithExistingBlobUpdateSize_ShouldRecalculateContainerTotalSize()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create container first due to foreign key constraint
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "container-etag",
+            LastModified = DateTimeOffset.UtcNow,
+            BlobCount = 1,
+            TotalSize = 1024
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        // Create existing blob with size 1024
+        var existingBlob = new BlobModel
+        {
+            Name = "existing-blob.txt",
+            ContainerName = "test-container",
+            CachedCopyId = "old-id",
+            ETag = "old-etag",
+            LastModified = DateTimeOffset.UtcNow.AddDays(-1),
+            ContentType = "text/plain",
+            ContentLength = 1024,
+            CreatedOn = DateTimeOffset.UtcNow.AddDays(-2)
+        };
+        context.Blobs.Add(existingBlob);
+        await context.SaveChangesAsync();
+
+        // Update blob with new size 5120
+        var blobItem = CreateBlobItem("existing-blob.txt", etag: "new-etag", contentLength: 5120);
+        var cacheCopyId = Guid.NewGuid().ToString("N");
+
+        // Act
+        await context.UpsertBlobAsync(blobItem, "test-container", cacheCopyId, CancellationToken.None);
+
+        // Assert
+        var updatedContainer = await context.Containers.FirstOrDefaultAsync(c => c.Name == "test-container");
+        updatedContainer.Should().NotBeNull();
+        updatedContainer!.BlobCount.Should().Be(1); // Still 1 blob
+        updatedContainer.TotalSize.Should().Be(5120); // Size updated from 1024 to 5120
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertBlobAsync_WithExistingBlobsAndNewBlob_ShouldAccumulateContainerTotals()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create container first due to foreign key constraint
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "container-etag",
+            LastModified = DateTimeOffset.UtcNow,
+            BlobCount = 2,
+            TotalSize = 3072
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        // Create existing blobs
+        var existingBlob1 = new BlobModel
+        {
+            Name = "existing1.txt",
+            ContainerName = "test-container",
+            CachedCopyId = "id1",
+            ETag = "etag1",
+            LastModified = DateTimeOffset.UtcNow,
+            ContentLength = 1024,
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        var existingBlob2 = new BlobModel
+        {
+            Name = "existing2.txt",
+            ContainerName = "test-container",
+            CachedCopyId = "id2",
+            ETag = "etag2",
+            LastModified = DateTimeOffset.UtcNow,
+            ContentLength = 2048,
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        context.Blobs.AddRange(existingBlob1, existingBlob2);
+        await context.SaveChangesAsync();
+
+        // Add a new blob
+        var newBlob = CreateBlobItem("new-blob.txt", contentLength: 4096);
+        var cacheCopyId = Guid.NewGuid().ToString("N");
+
+        // Act
+        await context.UpsertBlobAsync(newBlob, "test-container", cacheCopyId, CancellationToken.None);
+
+        // Assert
+        var updatedContainer = await context.Containers.FirstOrDefaultAsync(c => c.Name == "test-container");
+        updatedContainer.Should().NotBeNull();
+        updatedContainer!.BlobCount.Should().Be(3); // 2 existing + 1 new
+        updatedContainer.TotalSize.Should().Be(7168); // 1024 + 2048 + 4096
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertBlobAsync_WithMultipleUpdates_ShouldMaintainCorrectContainerTotals()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create container first due to foreign key constraint
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "container-etag",
+            LastModified = DateTimeOffset.UtcNow,
+            BlobCount = 0,
+            TotalSize = 0
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var cacheCopyId = Guid.NewGuid().ToString("N");
+
+        // Act - Add first blob
+        var blob1 = CreateBlobItem("blob1.txt", contentLength: 1000);
+        await context.UpsertBlobAsync(blob1, "test-container", cacheCopyId, CancellationToken.None);
+
+        // Act - Add second blob
+        var blob2 = CreateBlobItem("blob2.txt", contentLength: 2000);
+        await context.UpsertBlobAsync(blob2, "test-container", cacheCopyId, CancellationToken.None);
+
+        // Act - Update first blob with new size
+        var blob1Updated = CreateBlobItem("blob1.txt", etag: "new-etag", contentLength: 1500);
+        await context.UpsertBlobAsync(blob1Updated, "test-container", cacheCopyId, CancellationToken.None);
+
+        // Assert
+        var updatedContainer = await context.Containers.FirstOrDefaultAsync(c => c.Name == "test-container");
+        updatedContainer.Should().NotBeNull();
+        updatedContainer!.BlobCount.Should().Be(2);
+        updatedContainer.TotalSize.Should().Be(3500); // 1500 (updated) + 2000
+    }
+
     #endregion
 
 
@@ -868,6 +1082,184 @@ public class CacheDbContext_Tests : SqliteDbTests
         var remainingContainers = await context.Containers.ToListAsync();
         remainingContainers.Should().ContainSingle();
         remainingContainers[0].Name.Should().Be("container-2");
+    }
+
+    #endregion
+
+    #region UpsertUploadBlockAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithNewBlock_ShouldCreateBlock()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var upload = await CreateUploadModelAsync(context, "test-container");
+        var blockModel = CreateUploadBlockModel(upload.UploadId, "block-001", contentMD5: "abc123");
+
+        // Act
+        var result = await context.UpsertUploadBlockAsync(blockModel, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.UploadId.Should().Be(upload.UploadId);
+        result.BlockId.Should().Be("block-001");
+        result.BlockSize.Should().Be(1024);
+        result.ContentMD5.Should().Be("abc123");
+
+        var storedBlock = await context.UploadBlocks.FirstOrDefaultAsync(b => b.BlockId == "block-001" && b.UploadId == upload.UploadId);
+        storedBlock.Should().NotBeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithExistingBlock_ShouldUpdateBlock()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var upload = await CreateUploadModelAsync(context, "test-container");
+
+        // Create existing block
+        var existingBlock = CreateUploadBlockModel(upload.UploadId, "block-001", blockSize: 512, contentMD5: "old-hash", uploadedAt: DateTimeOffset.UtcNow.AddMinutes(-10));
+        context.UploadBlocks.Add(existingBlock);
+        await context.SaveChangesAsync();
+
+        var newUploadedAt = DateTimeOffset.UtcNow;
+        var updatedBlock = CreateUploadBlockModel(upload.UploadId, "block-001", blockSize: 2048, contentMD5: "new-hash", uploadedAt: newUploadedAt);
+
+        // Act
+        var result = await context.UpsertUploadBlockAsync(updatedBlock, CancellationToken.None);
+
+        // Assert
+        result.UploadId.Should().Be(upload.UploadId);
+        result.BlockId.Should().Be("block-001");
+        result.BlockSize.Should().Be(2048);
+        result.ContentMD5.Should().Be("new-hash");
+        result.UploadedAt.Should().Be(newUploadedAt);
+
+        var blocks = await context.UploadBlocks.ToListAsync();
+        blocks.Should().ContainSingle(x => x.BlockId == "block-001" && x.UploadId == upload.UploadId && x.BlockSize == 2048);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithAssociatedUpload_ShouldUpdateUploadLastActivityAt()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var originalLastActivityAt = DateTimeOffset.UtcNow.AddMinutes(-30);
+        var upload = await CreateUploadModelAsync(context, "test-container",
+            createdAt: DateTimeOffset.UtcNow.AddHours(-1),
+            lastActivityAt: originalLastActivityAt);
+
+        var blockModel = CreateUploadBlockModel(upload.UploadId, "block-001", contentMD5: "abc123");
+
+        // Act
+        await context.UpsertUploadBlockAsync(blockModel, CancellationToken.None);
+
+        // Assert
+        var updatedUpload = await context.Uploads.FirstOrDefaultAsync(u => u.UploadId == upload.UploadId);
+        updatedUpload.Should().NotBeNull();
+        updatedUpload!.LastActivityAt.Should().BeAfter(originalLastActivityAt);
+        updatedUpload.LastActivityAt.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithDeletedUpload_ShouldStillCreateBlockWithoutUpdatingUpload()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var upload = await CreateUploadModelAsync(context, "test-container");
+        var blockModel = CreateUploadBlockModel(upload.UploadId, "block-001", contentMD5: "abc123");
+
+        // Act
+        var result = await context.UpsertUploadBlockAsync(blockModel, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.UploadId.Should().Be(upload.UploadId);
+        result.BlockId.Should().Be("block-001");
+
+        var storedBlock = await context.UploadBlocks.FirstOrDefaultAsync(b => b.BlockId == "block-001" && b.UploadId == upload.UploadId);
+        storedBlock.Should().NotBeNull();
+
+        // Verify upload's LastActivityAt was updated
+        var updatedUpload = await context.Uploads.FirstOrDefaultAsync(u => u.UploadId == upload.UploadId);
+        updatedUpload.Should().NotBeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithNullContentMD5_ShouldCreateBlock()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var upload = await CreateUploadModelAsync(context, "test-container");
+        var blockModel = CreateUploadBlockModel(upload.UploadId, "block-001", contentMD5: null);
+
+        // Act
+        var result = await context.UpsertUploadBlockAsync(blockModel, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.ContentMD5.Should().BeNull();
+
+        var storedBlock = await context.UploadBlocks.FirstOrDefaultAsync(b => b.BlockId == "block-001" && b.UploadId == upload.UploadId);
+        storedBlock.Should().NotBeNull();
+        storedBlock!.ContentMD5.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithMultipleBlocksForSameUpload_ShouldCreateAllBlocks()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var upload = await CreateUploadModelAsync(context, "test-container");
+
+        var block1 = CreateUploadBlockModel(upload.UploadId, "block-001", contentMD5: "hash1");
+        var block2 = CreateUploadBlockModel(upload.UploadId, "block-002", blockSize: 2048, contentMD5: "hash2");
+
+        // Act
+        await context.UpsertUploadBlockAsync(block1, CancellationToken.None);
+        await context.UpsertUploadBlockAsync(block2, CancellationToken.None);
+
+        // Assert
+        var blocks = await context.UploadBlocks.Where(b => b.UploadId == upload.UploadId).ToListAsync();
+        blocks.Should().HaveCount(2);
+        blocks.Should().Contain(b => b.BlockId == "block-001");
+        blocks.Should().Contain(b => b.BlockId == "block-002");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UpsertUploadBlockAsync_WithSameBlockIdDifferentUploadId_ShouldCreateBothBlocks()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        await CreateContainerModelAsync(context);
+        var upload1 = await CreateUploadModelAsync(context, "test-container", blobName: "test-blob1.txt");
+        var upload2 = await CreateUploadModelAsync(context, "test-container", blobName: "test-blob2.txt", contentLength: 20480);
+
+        var block1 = CreateUploadBlockModel(upload1.UploadId, "block-001", contentMD5: "hash1");
+        var block2 = CreateUploadBlockModel(upload2.UploadId, "block-001", blockSize: 2048, contentMD5: "hash2");
+
+        // Act
+        await context.UpsertUploadBlockAsync(block1, CancellationToken.None);
+        await context.UpsertUploadBlockAsync(block2, CancellationToken.None);
+
+        // Assert
+        var blocks = await context.UploadBlocks.ToListAsync();
+        blocks.Should().HaveCount(2);
+        blocks.Should().Contain(b => b.BlockId == "block-001" && b.UploadId == upload1.UploadId && b.BlockSize == 1024);
+        blocks.Should().Contain(b => b.BlockId == "block-001" && b.UploadId == upload2.UploadId && b.BlockSize == 2048);
     }
 
     #endregion

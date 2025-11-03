@@ -479,6 +479,7 @@ public class AzuriteService : IAzuriteService
             _ => new AzuriteServiceException("An error occurred while communicating with the Azurite service.", ex) { StatusCode = ex.Status },
         };
     }
+    
     /// <summary>
     /// Converts the provided default encryption scope and prevent override flag
     /// into a <see cref="BlobContainerEncryptionScopeOptions"/> instance.

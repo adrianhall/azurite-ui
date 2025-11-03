@@ -5,8 +5,7 @@
 /// when uploading a blob.
 /// </summary>
 public class AzuriteBlobProperties
-{
-    
+{ 
     /// <summary>
     /// The content encoding of the blob.
     /// </summary>

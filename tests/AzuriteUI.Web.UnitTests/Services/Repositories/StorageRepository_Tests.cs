@@ -1484,4 +1484,998 @@ public class StorageRepository_Tests : SqliteDbTests
     }
 
     #endregion
+
+    #region Uploads Property Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task Uploads_WithNoUploads_ShouldReturnEmptyQueryable()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.Uploads.ToListAsync();
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task Uploads_WithSingleUpload_ShouldReturnMappedDTO()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow.AddHours(-2);
+        var lastActivityAt = DateTimeOffset.UtcNow.AddMinutes(-30);
+        var upload = await CreateUploadModelAsync(
+            context,
+            "test-container",
+            uploadId,
+            "test-blob.txt",
+            10240,
+            "text/plain",
+            createdAt,
+            lastActivityAt
+        );
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.Uploads.SingleAsync();
+
+        // Assert
+        result.Id.Should().Be(uploadId);
+        result.Name.Should().Be("test-blob.txt");
+        result.ContainerName.Should().Be("test-container");
+        result.LastActivityAt.Should().BeCloseTo(lastActivityAt, TimeSpan.FromMilliseconds(100));
+        result.Progress.Should().Be(0.0);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task Uploads_WithMultipleUploads_ShouldReturnAllMappedDTOs()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId1 = Guid.NewGuid();
+        var uploadId2 = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId1, "blob-1.txt");
+        await CreateUploadModelAsync(context, "test-container", uploadId2, "blob-2.txt");
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.Uploads.ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().Contain(u => u.Id == uploadId1 && u.Name == "blob-1.txt");
+        result.Should().Contain(u => u.Id == uploadId2 && u.Name == "blob-2.txt");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task Uploads_WithBlocks_ShouldCalculateProgressCorrectly()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        var upload = await CreateUploadModelAsync(
+            context,
+            "test-container",
+            uploadId,
+            "test-blob.txt",
+            contentLength: 10000
+        );
+
+        // Add blocks totaling 5000 bytes (50% progress)
+        var block1 = CreateUploadBlockModel(uploadId, "block1", blockSize: 3000);
+        var block2 = CreateUploadBlockModel(uploadId, "block2", blockSize: 2000);
+        context.UploadBlocks.AddRange(block1, block2);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.Uploads.SingleAsync();
+
+        // Assert
+        result.Progress.Should().BeApproximately(50.0, 0.01);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task Uploads_WithZeroContentLength_ShouldReturnZeroProgress()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(
+            context,
+            "test-container",
+            uploadId,
+            "test-blob.txt",
+            contentLength: 0
+        );
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.Uploads.SingleAsync();
+
+        // Assert
+        result.Progress.Should().Be(0.0);
+    }
+
+    #endregion
+
+    #region DownloadBlobAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithExistingBlob_ShouldReturnBlobDownloadDTO()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var blob = CreateBlobModel("test-blob.txt", "test-container", contentLength: 2048);
+        blob.ContentType = "text/plain";
+        blob.ContentEncoding = "gzip";
+        blob.ContentLanguage = "en-us";
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        var contentStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var azuriteResult = new AzuriteBlobDownloadResult
+        {
+            Content = contentStream,
+            ContentLength = 2048,
+            ContentRange = null,
+            ContentType = "text/plain",
+            StatusCode = 200
+        };
+
+        _mockAzuriteService.DownloadBlobAsync("test-container", "test-blob.txt", null, Arg.Any<CancellationToken>())
+            .Returns(azuriteResult);
+
+        // Act
+        var result = await repository.DownloadBlobAsync("test-container", "test-blob.txt", null, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Name.Should().Be("test-blob.txt");
+        result.ContainerName.Should().Be("test-container");
+        result.Content.Should().NotBeNull();
+        result.ContentLength.Should().Be(2048);
+        result.ContentType.Should().Be("text/plain");
+        result.ContentEncoding.Should().Be("gzip");
+        result.ContentLanguage.Should().Be("en-us");
+        result.StatusCode.Should().Be(200);
+        result.ETag.Should().Be(blob.ETag);
+
+        await _mockAzuriteService.Received(1).DownloadBlobAsync("test-container", "test-blob.txt", null, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithHttpRange_ShouldPassRangeToAzurite()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var blob = CreateBlobModel("test-blob.txt", "test-container", contentLength: 2048);
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        var contentStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var azuriteResult = new AzuriteBlobDownloadResult
+        {
+            Content = contentStream,
+            ContentLength = 500,
+            ContentRange = "bytes 0-499/2048",
+            ContentType = "text/plain",
+            StatusCode = 206
+        };
+
+        _mockAzuriteService.DownloadBlobAsync("test-container", "test-blob.txt", "bytes=0-499", Arg.Any<CancellationToken>())
+            .Returns(azuriteResult);
+
+        // Act
+        var result = await repository.DownloadBlobAsync("test-container", "test-blob.txt", "bytes=0-499", CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.StatusCode.Should().Be(206);
+        result.ContentRange.Should().Be("bytes 0-499/2048");
+
+        await _mockAzuriteService.Received(1).DownloadBlobAsync("test-container", "test-blob.txt", "bytes=0-499", Arg.Any<CancellationToken>());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithNonExistentBlob_ShouldThrowResourceNotFoundException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        // Act
+        var act = async () => await repository.DownloadBlobAsync("test-container", "non-existent.txt", null, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ResourceNotFoundException>()
+            .Where(ex => ex.ResourceName == "test-container/non-existent.txt");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WhenAzuriteReturnsFailureStatus_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var blob = CreateBlobModel("test-blob.txt", "test-container");
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        var azuriteResult = new AzuriteBlobDownloadResult
+        {
+            Content = null,
+            StatusCode = 500
+        };
+
+        _mockAzuriteService.DownloadBlobAsync("test-container", "test-blob.txt", null, Arg.Any<CancellationToken>())
+            .Returns(azuriteResult);
+
+        // Act
+        var act = async () => await repository.DownloadBlobAsync("test-container", "test-blob.txt", null, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == 500);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_ShouldRespectCancellationToken()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var blob = CreateBlobModel("test-blob.txt", "test-container");
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        _mockAzuriteService.DownloadBlobAsync("test-container", "test-blob.txt", null, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        // Act
+        var act = async () => await repository.DownloadBlobAsync("test-container", "test-blob.txt", null, cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    #endregion
+
+    #region CreateUploadAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task CreateUploadAsync_WithValidInput_ShouldCreateUploadSession()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var repository = CreateRepository(context);
+
+        var uploadDto = new CreateUploadRequestDTO
+        {
+            BlobName = "new-blob.txt",
+            ContainerName = "test-container",
+            ContentLength = 10240,
+            ContentType = "text/plain",
+            ContentEncoding = "gzip",
+            ContentLanguage = "en-us",
+            Metadata = new Dictionary<string, string> { ["key"] = "value" },
+            Tags = new Dictionary<string, string> { ["tag"] = "value" }
+        };
+
+        // Act
+        var uploadId = await repository.CreateUploadAsync(uploadDto, CancellationToken.None);
+
+        // Assert
+        uploadId.Should().NotBeEmpty();
+
+        var upload = await context.Uploads.FirstOrDefaultAsync(u => u.UploadId == uploadId);
+        upload.Should().NotBeNull();
+        upload!.BlobName.Should().Be("new-blob.txt");
+        upload.ContainerName.Should().Be("test-container");
+        upload.ContentLength.Should().Be(10240);
+        upload.ContentType.Should().Be("text/plain");
+        upload.ContentEncoding.Should().Be("gzip");
+        upload.ContentLanguage.Should().Be("en-us");
+        upload.Metadata.Should().ContainKey("key").WhoseValue.Should().Be("value");
+        upload.Tags.Should().ContainKey("tag").WhoseValue.Should().Be("value");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CreateUploadAsync_WithNonExistentContainer_ShouldThrowResourceNotFoundException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        var uploadDto = new CreateUploadRequestDTO
+        {
+            BlobName = "new-blob.txt",
+            ContainerName = "non-existent-container",
+            ContentLength = 10240
+        };
+
+        // Act
+        var act = async () => await repository.CreateUploadAsync(uploadDto, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ResourceNotFoundException>()
+            .Where(ex => ex.ResourceName == "non-existent-container");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CreateUploadAsync_WithExistingBlob_ShouldThrowResourceExistsException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var blob = CreateBlobModel("existing-blob.txt", "test-container");
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        var uploadDto = new CreateUploadRequestDTO
+        {
+            BlobName = "existing-blob.txt",
+            ContainerName = "test-container",
+            ContentLength = 10240
+        };
+
+        // Act
+        var act = async () => await repository.CreateUploadAsync(uploadDto, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ResourceExistsException>()
+            .Where(ex => ex.ResourceName == "test-container/existing-blob.txt");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CreateUploadAsync_ShouldRespectCancellationToken()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var uploadDto = new CreateUploadRequestDTO
+        {
+            BlobName = "new-blob.txt",
+            ContainerName = "test-container",
+            ContentLength = 10240
+        };
+
+        // Act
+        var act = async () => await repository.CreateUploadAsync(uploadDto, cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    #endregion
+
+    #region UploadBlockAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task UploadBlockAsync_WithValidBlock_ShouldUploadToAzuriteAndSaveToCache()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "test-blob.txt");
+
+        var repository = CreateRepository(context);
+
+        var blockId = Convert.ToBase64String("block1"u8.ToArray());
+        var contentStream = new MemoryStream([1, 2, 3, 4, 5]);
+
+        var blockInfo = new AzuriteBlobBlockInfo
+        {
+            BlockId = blockId,
+            ContentMD5 = "test-md5",
+            StatusCode = 201
+        };
+
+        _mockAzuriteService.UploadBlockAsync("test-container", "test-blob.txt", blockId, contentStream, Arg.Any<CancellationToken>())
+            .Returns(blockInfo);
+
+        // Act
+        await repository.UploadBlockAsync(uploadId, blockId, contentStream, null, CancellationToken.None);
+
+        // Assert
+        var uploadBlock = await context.UploadBlocks.FirstOrDefaultAsync(b => b.UploadId == uploadId && b.BlockId == blockId);
+        uploadBlock.Should().NotBeNull();
+        uploadBlock!.BlockId.Should().Be(blockId);
+        uploadBlock.BlockSize.Should().Be(5);
+        uploadBlock.ContentMD5.Should().Be("test-md5");
+
+        await _mockAzuriteService.Received(1).UploadBlockAsync("test-container", "test-blob.txt", blockId, contentStream, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UploadBlockAsync_WithInvalidBlockId_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        var uploadId = Guid.NewGuid();
+        var contentStream = new MemoryStream([1, 2, 3]);
+
+        // Act
+        var act = async () => await repository.UploadBlockAsync(uploadId, "not-base64!", contentStream, null, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UploadBlockAsync_WithNonExistentUpload_ShouldThrowResourceNotFoundException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        var uploadId = Guid.NewGuid();
+        var blockId = Convert.ToBase64String("block1"u8.ToArray());
+        var contentStream = new MemoryStream([1, 2, 3]);
+
+        // Act
+        var act = async () => await repository.UploadBlockAsync(uploadId, blockId, contentStream, null, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ResourceNotFoundException>()
+            .Where(ex => ex.ResourceName == uploadId.ToString());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UploadBlockAsync_WhenAzuriteFails_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "test-blob.txt");
+
+        var repository = CreateRepository(context);
+
+        var blockId = Convert.ToBase64String("block1"u8.ToArray());
+        var contentStream = new MemoryStream([1, 2, 3]);
+
+        var blockInfo = new AzuriteBlobBlockInfo
+        {
+            BlockId = blockId,
+            StatusCode = 500
+        };
+
+        _mockAzuriteService.UploadBlockAsync("test-container", "test-blob.txt", blockId, contentStream, Arg.Any<CancellationToken>())
+            .Returns(blockInfo);
+
+        // Act
+        var act = async () => await repository.UploadBlockAsync(uploadId, blockId, contentStream, null, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == 500);
+
+        // Verify block was not saved to cache
+        var uploadBlock = await context.UploadBlocks.FirstOrDefaultAsync(b => b.UploadId == uploadId && b.BlockId == blockId);
+        uploadBlock.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task UploadBlockAsync_ShouldRespectCancellationToken()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "test-blob.txt");
+
+        var repository = CreateRepository(context);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var blockId = Convert.ToBase64String("block1"u8.ToArray());
+        var contentStream = new MemoryStream([1, 2, 3]);
+
+        _mockAzuriteService.UploadBlockAsync("test-container", "test-blob.txt", blockId, contentStream, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        // Act
+        var act = async () => await repository.UploadBlockAsync(uploadId, blockId, contentStream, null, cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    #endregion
+
+    #region GetUploadStatusAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task GetUploadStatusAsync_WithExistingUpload_ShouldReturnUploadStatusDTO()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow.AddHours(-1);
+        var lastActivityAt = DateTimeOffset.UtcNow.AddMinutes(-10);
+        var upload = await CreateUploadModelAsync(
+            context,
+            "test-container",
+            uploadId,
+            "test-blob.txt",
+            10240,
+            "text/plain",
+            createdAt,
+            lastActivityAt
+        );
+
+        var block1 = CreateUploadBlockModel(uploadId, "block1", blockSize: 1024);
+        var block2 = CreateUploadBlockModel(uploadId, "block2", blockSize: 2048);
+        context.UploadBlocks.AddRange(block1, block2);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetUploadStatusAsync(uploadId, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.UploadId.Should().Be(uploadId);
+        result.ContainerName.Should().Be("test-container");
+        result.BlobName.Should().Be("test-blob.txt");
+        result.ContentLength.Should().Be(10240);
+        result.ContentType.Should().Be("text/plain");
+        result.UploadedBlocks.Should().HaveCount(2);
+        result.UploadedBlocks.Should().Contain("block1");
+        result.UploadedBlocks.Should().Contain("block2");
+        result.UploadedLength.Should().Be(3072);
+        result.CreatedAt.Should().BeCloseTo(createdAt, TimeSpan.FromMilliseconds(100));
+        result.LastActivityAt.Should().BeCloseTo(lastActivityAt, TimeSpan.FromMilliseconds(100));
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetUploadStatusAsync_WithNoBlocks_ShouldReturnZeroUploadedLength()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "test-blob.txt");
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetUploadStatusAsync(uploadId, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.UploadedBlocks.Should().BeEmpty();
+        result.UploadedLength.Should().Be(0);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetUploadStatusAsync_WithNonExistentUpload_ShouldThrowResourceNotFoundException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        var uploadId = Guid.NewGuid();
+
+        // Act
+        var act = async () => await repository.GetUploadStatusAsync(uploadId, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ResourceNotFoundException>()
+            .Where(ex => ex.ResourceName == uploadId.ToString());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetUploadStatusAsync_ShouldRespectCancellationToken()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var uploadId = Guid.NewGuid();
+
+        // Act
+        var act = async () => await repository.GetUploadStatusAsync(uploadId, cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    #endregion
+
+    #region CommitUploadAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task CommitUploadAsync_WithAllBlocksUploaded_ShouldCommitAndReturnBlobDTO()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        var upload = await CreateUploadModelAsync(context, "test-container", uploadId, "new-blob.txt");
+        upload.ContentEncoding = "gzip";
+        upload.ContentLanguage = "en-us";
+        upload.ContentType = "text/plain";
+        upload.Metadata = new Dictionary<string, string> { ["key"] = "value" };
+        upload.Tags = new Dictionary<string, string> { ["tag"] = "value" };
+        await context.SaveChangesAsync();
+
+        var block1 = CreateUploadBlockModel(uploadId, "block1", blockSize: 1024);
+        var block2 = CreateUploadBlockModel(uploadId, "block2", blockSize: 2048);
+        context.UploadBlocks.AddRange(block1, block2);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        var committedBlob = CreateBlobItem("new-blob.txt", etag: "commit-etag", contentLength: 3072);
+        committedBlob.ContentEncoding = "gzip";
+        committedBlob.ContentLanguage = "en-us";
+        committedBlob.ContentType = "text/plain";
+        committedBlob.Metadata = new Dictionary<string, string> { ["key"] = "value" };
+        committedBlob.Tags = new Dictionary<string, string> { ["tag"] = "value" };
+
+        _mockAzuriteService.UploadCommitAsync(
+            "test-container",
+            "new-blob.txt",
+            Arg.Is<IEnumerable<string>>(blocks => blocks.SequenceEqual(new[] { "block1", "block2" })),
+            Arg.Any<AzuriteBlobProperties>(),
+            Arg.Any<CancellationToken>()
+        ).Returns(committedBlob);
+
+        // Act
+        var result = await repository.CommitUploadAsync(uploadId, new[] { "block1", "block2" }, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Name.Should().Be("new-blob.txt");
+        result.ContainerName.Should().Be("test-container");
+        result.ETag.Should().Be("commit-etag");
+        result.ContentEncoding.Should().Be("gzip");
+        result.ContentLanguage.Should().Be("en-us");
+        result.ContentType.Should().Be("text/plain");
+        result.Metadata.Should().ContainKey("key").WhoseValue.Should().Be("value");
+        result.Tags.Should().ContainKey("tag").WhoseValue.Should().Be("value");
+
+        // Verify the blob was saved to cache
+        var cachedBlob = await context.Blobs.FirstOrDefaultAsync(b => b.ContainerName == "test-container" && b.Name == "new-blob.txt");
+        cachedBlob.Should().NotBeNull();
+
+        await _mockAzuriteService.Received(1).UploadCommitAsync(
+            "test-container",
+            "new-blob.txt",
+            Arg.Any<IEnumerable<string>>(),
+            Arg.Is<AzuriteBlobProperties>(p =>
+                p.ContentEncoding == "gzip" &&
+                p.ContentLanguage == "en-us" &&
+                p.ContentType == "text/plain" &&
+                p.Metadata.ContainsKey("key") &&
+                p.Tags.ContainsKey("tag")),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CommitUploadAsync_WithMissingBlocks_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "new-blob.txt");
+
+        var block1 = CreateUploadBlockModel(uploadId, "block1");
+        context.UploadBlocks.Add(block1);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act - trying to commit with blocks that haven't been uploaded
+        var act = async () => await repository.CommitUploadAsync(uploadId, new[] { "block1", "block2", "block3" }, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CommitUploadAsync_WithNonExistentUpload_ShouldThrowResourceNotFoundException()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        var uploadId = Guid.NewGuid();
+
+        // Act
+        var act = async () => await repository.CommitUploadAsync(uploadId, new[] { "block1" }, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<ResourceNotFoundException>()
+            .Where(ex => ex.ResourceName == uploadId.ToString());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CommitUploadAsync_ShouldRespectCancellationToken()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "new-blob.txt");
+
+        var repository = CreateRepository(context);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        _mockAzuriteService.UploadCommitAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<IEnumerable<string>>(),
+            Arg.Any<AzuriteBlobProperties>(),
+            Arg.Any<CancellationToken>()
+        ).ThrowsAsync(new OperationCanceledException());
+
+        // Act
+        var act = async () => await repository.CommitUploadAsync(uploadId, new[] { "block1" }, cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    #endregion
+
+    #region CancelUploadAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task CancelUploadAsync_WithExistingUpload_ShouldRemoveFromCache()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var uploadId = Guid.NewGuid();
+        await CreateUploadModelAsync(context, "test-container", uploadId, "test-blob.txt");
+
+        var repository = CreateRepository(context);
+
+        // Act
+        await repository.CancelUploadAsync(uploadId, CancellationToken.None);
+
+        // Assert
+        var upload = await context.Uploads.FirstOrDefaultAsync(u => u.UploadId == uploadId);
+        upload.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CancelUploadAsync_WithNonExistentUpload_ShouldNotThrow()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        var uploadId = Guid.NewGuid();
+
+        // Act
+        var act = async () => await repository.CancelUploadAsync(uploadId, CancellationToken.None);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task CancelUploadAsync_ShouldRespectCancellationToken()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var uploadId = Guid.NewGuid();
+
+        // Act
+        var act = async () => await repository.CancelUploadAsync(uploadId, cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    #endregion
+
+    #region ValidateBlockId Tests
+
+    [Theory(Timeout = 15000)]
+    [InlineData("YmxvY2sxMjM=")] // "block123" in base64
+    [InlineData("dGVzdA==")] // "test" in base64
+    [InlineData("MTIzNDU2Nzg5MA==")] // "1234567890" in base64
+    public void ValidateBlockId_WithValidBase64_ShouldNotThrow(string blockId)
+    {
+        // Act
+        var act = () => StorageRepository.ValidateBlockId(blockId);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlockId_WithInvalidBase64_ShouldThrowAzuriteServiceException()
+    {
+        // Act
+        var act = () => StorageRepository.ValidateBlockId("not-base64!");
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlockId_WithTooLongBlockId_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange - Create a base64 string that decodes to more than 64 bytes
+        var longBytes = new byte[65];
+        Array.Fill(longBytes, (byte)0x41);
+        var longBlockId = Convert.ToBase64String(longBytes);
+
+        // Act
+        var act = () => StorageRepository.ValidateBlockId(longBlockId);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlockId_WithEmptyString_ShouldNotThrow()
+    {
+        // Act
+        var act = () => StorageRepository.ValidateBlockId("");
+
+        // Assert - Empty string is valid base64 (decodes to 0 bytes)
+        act.Should().NotThrow();
+    }
+
+    #endregion
+
+    #region DisposeDownloadStream Tests
+
+    [Fact(Timeout = 15000)]
+    public void DisposeDownloadStream_WithValidStream_ShouldDisposeAndSetToNull()
+    {
+        // Arrange
+        var stream = new MemoryStream([1, 2, 3]);
+        var dto = new BlobDownloadDTO
+        {
+            Name = "test",
+            ContainerName = "test",
+            ETag = "test",
+            LastModified = DateTimeOffset.UtcNow,
+            Content = stream,
+            StatusCode = 200
+        };
+
+        // Act
+        StorageRepository.DisposeDownloadStream(dto);
+
+        // Assert
+        dto.Content.Should().BeNull();
+        var act = () => stream.ReadByte();
+        act.Should().Throw<ObjectDisposedException>();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void DisposeDownloadStream_WithNullStream_ShouldNotThrow()
+    {
+        // Arrange
+        var dto = new BlobDownloadDTO
+        {
+            Name = "test",
+            ContainerName = "test",
+            ETag = "test",
+            LastModified = DateTimeOffset.UtcNow,
+            Content = null,
+            StatusCode = 200
+        };
+
+        // Act
+        var act = () => StorageRepository.DisposeDownloadStream(dto);
+
+        // Assert
+        act.Should().NotThrow();
+        dto.Content.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void DisposeDownloadStream_WithStreamThatThrowsOnDispose_ShouldNotThrow()
+    {
+        // Arrange - Create a custom stream that throws on dispose
+        var throwingStream = new ThrowingStream();
+
+        var dto = new BlobDownloadDTO
+        {
+            Name = "test",
+            ContainerName = "test",
+            ETag = "test",
+            LastModified = DateTimeOffset.UtcNow,
+            Content = throwingStream,
+            StatusCode = 200
+        };
+
+        // Act
+        var act = () => StorageRepository.DisposeDownloadStream(dto);
+
+        // Assert - The method swallows exceptions to avoid masking original errors
+        act.Should().NotThrow();
+    }
+
+    private class ThrowingStream : MemoryStream
+    {
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                throw new IOException("Dispose failed");
+            }
+            base.Dispose(disposing);
+        }
+    }
+
+    #endregion
 }

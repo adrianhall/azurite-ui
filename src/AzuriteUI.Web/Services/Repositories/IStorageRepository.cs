@@ -30,7 +30,7 @@ public interface IStorageRepository
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The blob DTO, or null if not found.</returns>
     Task<BlobDTO?> GetBlobAsync(string containerName, string blobName, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Updates an existing blob in Azurite and updates the cache.
     /// </summary>
@@ -83,4 +83,69 @@ public interface IStorageRepository
     Task<ContainerDTO> UpdateContainerAsync(string containerName, ContainerUpdateDTO updateDto, CancellationToken cancellationToken = default);
     #endregion
 
+    #region Upload and Download
+    /// <summary>
+    /// The queryable collection of upload sessions.
+    /// </summary>
+    IQueryable<UploadDTO> Uploads { get; }
+
+    /// <summary>
+    /// Initiates a download of the specified blob from Azurite.
+    /// </summary>
+    /// <remarks>
+    /// This method streams the blob data directly from Azurite to avoid loading large blobs into memory.  Since we
+    /// do HTTP range requests, the BlobDownloadDTO can return a status code indicating partial content or full
+    /// content or content range cannot be satisfied or not found.
+    /// </remarks>
+    /// <param name="containerName">The name of the container.</param>
+    /// <param name="blobName">The name of the blob to download.</param>
+    /// <param name="httpRange">The HTTP range to download.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>A task that represents the asynchronous download operation. The result contains the downloaded blob DTO, or null if not found.</returns>
+    Task<BlobDownloadDTO> DownloadBlobAsync(string containerName, string blobName, string? httpRange = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancels an upload session and deletes all associated blocks.
+    /// </summary>
+    /// <param name="uploadId">The unique identifier of the upload session.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>A task that completes when the upload is cancelled.</returns>
+    Task CancelUploadAsync(Guid uploadId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Commits an upload session by assembling the blocks into a blob.
+    /// </summary>
+    /// <param name="uploadId">The unique identifier of the upload session.</param>
+    /// <param name="blockIds">The ordered list of blocks to commit.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>The created blob DTO.</returns>
+    Task<BlobDTO> CommitUploadAsync(Guid uploadId, IEnumerable<string> blockIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Initiates a chunked blob upload session.
+    /// </summary>
+    /// <param name="uploadDto">The upload request details.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>The created upload session details.</returns>
+    Task<Guid> CreateUploadAsync(CreateUploadRequestDTO uploadDto, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the status of an upload session.
+    /// </summary>
+    /// <param name="uploadId">The unique identifier of the upload session.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>The upload status, or null if not found.</returns>
+    Task<UploadStatusDTO> GetUploadStatusAsync(Guid uploadId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Uploads a block (chunk) to an in-progress upload session.
+    /// </summary>
+    /// <param name="uploadId">The unique identifier of the upload session.</param>
+    /// <param name="blockId">The Base64-encoded block identifier.</param>
+    /// <param name="content">The block content stream.</param>
+    /// <param name="contentMD5">Optional MD5 hash for integrity verification.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>A task that completes when the block is uploaded.</returns>
+    Task UploadBlockAsync(Guid uploadId, string blockId, Stream content, string? contentMD5 = null, CancellationToken cancellationToken = default);
+    #endregion
 }

@@ -13,21 +13,28 @@ public class BlobDownloadDTO
     /// </summary>
     [property: Required]
     [property: Description("The name of the blob")]
-    public string Name { get; set; }  = string.Empty;
+    public required string Name { get; set; }
+
+    /// <summary>
+    /// The name of the container that contains the blob.
+    /// </summary>
+    [property: Required]
+    [property: Description("The name of the container that contains the blob")]
+    public required string ContainerName { get; set; }
 
     /// <summary>
     /// The entity tag of the blob.
     /// </summary>
     [property: Required]
     [property: Description("The entity tag of the blob")]
-    public string ETag { get; set; } = string.Empty;
+    public required string ETag { get; set; }
 
     /// <summary>
     /// The date/time that the blob was last modified.
     /// </summary>
     [property: Required]
     [property: Description("The date/time that the blob was last modified")]
-    public DateTimeOffset LastModified { get; set; } = DateTimeOffset.MinValue;
+    public required DateTimeOffset LastModified { get; set; }
 
     /// <summary>
     /// The content stream of the downloaded blob.

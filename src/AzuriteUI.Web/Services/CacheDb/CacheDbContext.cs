@@ -136,6 +136,18 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
         }
 
         await SaveChangesAsync(cancellationToken);
+
+        // Update the container model based on the current state of blobs
+        var blobCount = await Blobs.CountAsync(b => b.ContainerName == containerName, cancellationToken);
+        var totalSize = await Blobs.Where(b => b.ContainerName == containerName).SumAsync(b => (long?)b.ContentLength, cancellationToken) ?? 0L;
+        
+        // There is always a container, since there is a foreign key constraint between containers and blobs.
+        var container = await Containers.SingleAsync(c => c.Name == containerName, cancellationToken);
+        container.BlobCount = blobCount;
+        container.TotalSize = totalSize;
+        Containers.Update(container);
+        await SaveChangesAsync(cancellationToken);
+
         return existing;
     }
 
@@ -284,4 +296,38 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
     /// <returns>The upserted container.</returns>
     public Task<ContainerModel> UpsertContainerAsync(AzuriteContainerItem container, CancellationToken cancellationToken = default)
         => UpsertContainerAsync(container, Guid.NewGuid().ToString(), cancellationToken);
+
+    /// <summary>
+    /// Inserts or updates an upload block in the database.
+    /// </summary>
+    /// <param name="blockModel">The model to be inserted or updated.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>The updated upload block model</returns>
+    public async Task<UploadBlockModel> UpsertUploadBlockAsync(UploadBlockModel blockModel, CancellationToken cancellationToken = default)
+    {
+        var existingBlock = await UploadBlocks.FirstOrDefaultAsync(b => b.BlockId == blockModel.BlockId && b.UploadId == blockModel.UploadId, cancellationToken);
+        if (existingBlock is not null)
+        {
+            existingBlock.BlockSize = blockModel.BlockSize;
+            existingBlock.ContentMD5 = blockModel.ContentMD5;
+            existingBlock.UploadedAt = blockModel.UploadedAt;
+            UploadBlocks.Update(existingBlock);
+        }
+        else
+        {
+            existingBlock = blockModel;
+            UploadBlocks.Add(existingBlock);
+        }
+
+        // Find the associated upload and update its LastModified time
+        var upload = await Uploads.FirstOrDefaultAsync(u => u.UploadId == blockModel.UploadId, cancellationToken);
+        if (upload is not null)
+        {
+            upload.LastActivityAt = DateTimeOffset.UtcNow;
+            Uploads.Update(upload);
+        }
+
+        await SaveChangesAsync(cancellationToken);
+        return existingBlock;
+    }
 }
