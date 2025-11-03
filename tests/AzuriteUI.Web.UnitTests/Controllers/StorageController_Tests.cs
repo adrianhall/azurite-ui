@@ -1,0 +1,597 @@
+using AzuriteUI.Web.Controllers;
+using AzuriteUI.Web.Services.Repositories;
+using AzuriteUI.Web.Services.Repositories.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OData.Extensions;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.Extensions.Logging;
+using Microsoft.OData.Edm;
+using Microsoft.OData.ModelBuilder;
+using NSubstitute;
+
+namespace AzuriteUI.Web.UnitTests.Controllers;
+
+[ExcludeFromCodeCoverage]
+public class StorageController_Tests
+{
+    #region Helpers
+    /// <summary>
+    /// Creates a test IEdmModel configured with ContainerDTO.
+    /// </summary>
+    private static IEdmModel CreateTestEdmModel()
+    {
+        var odataBuilder = new ODataConventionModelBuilder();
+        odataBuilder.EnableLowerCamelCase();
+        var containerEntity = odataBuilder.EntitySet<ContainerDTO>("Containers").EntityType;
+        containerEntity.HasKey(c => c.Name);
+        return odataBuilder.GetEdmModel();
+    }
+
+    /// <summary>
+    /// Creates a configured HttpContext with the specified query string.
+    /// </summary>
+    private static DefaultHttpContext CreateTestHttpContext(string queryString = "")
+    {
+        var context = new DefaultHttpContext();
+        context.Request.QueryString = new QueryString(queryString);
+        return context;
+    }
+
+    /// <summary>
+    /// Creates ODataQueryOptions for testing with the specified query string.
+    /// </summary>
+    private static ODataQueryOptions CreateTestQueryOptions(string queryString = "")
+    {
+        var context = CreateTestHttpContext(queryString);
+        var edmModel = CreateTestEdmModel();
+        var queryContext = new ODataQueryContext(edmModel, typeof(ContainerDTO), new Microsoft.OData.UriParser.ODataPath());
+        return new ODataQueryOptions(queryContext, context.Request);
+    }
+
+    /// <summary>
+    /// Creates ODataQueryOptions of type T for testing with the specified query string.
+    /// </summary>
+    /// <typeparam name="T">The type for the query options.</typeparam>
+    /// <param name="queryString">The query string to use.</param>
+    /// <returns>ODataQueryOptions of type T.</returns>
+    private static ODataQueryOptions<T> CreateTestQueryOptions<T>(string queryString = "") where T : class
+    {
+        var context = CreateTestHttpContext(queryString);
+        var edmModel = CreateTestEdmModel();
+        var queryContext = new ODataQueryContext(edmModel, typeof(T), new Microsoft.OData.UriParser.ODataPath());
+        return new ODataQueryOptions<T>(queryContext, context.Request);
+    }
+    #endregion
+
+    #region Constructor and Properties Tests
+
+    [Fact(Timeout = 15000)]
+    public void Constructor_WithValidParameters_ShouldSetProperties()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+
+        // Act
+        var controller = new StorageController(repository, edmModel, logger);
+
+        // Assert
+        controller.Repository.Should().Be(repository);
+        controller.EdmModel.Should().Be(edmModel);
+        controller.Logger.Should().Be(logger);
+    }
+
+    #endregion
+
+    #region CreateLink Tests
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithNoParameters_ShouldReturnEmptyString()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.CreateLink(context.Request);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithOnlySkipParameter_ShouldReturnQueryStringWithSkip()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 10);
+
+        // Assert
+        result.Should().Be("$skip=10");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithOnlyTopParameter_ShouldReturnQueryStringWithTop()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, top: 25);
+
+        // Assert
+        result.Should().Be("$top=25");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithBothSkipAndTopParameters_ShouldReturnQueryStringWithBoth()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 10, top: 25);
+
+        // Assert
+        result.Should().Be("$skip=10&$top=25");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithZeroSkipAndTop_ShouldReturnEmptyString()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 0, top: 0);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithExistingQueryParameters_ShouldPreserveOtherParameters()
+    {
+        // Arrange
+        var context = CreateTestHttpContext("?$filter=name eq 'test'&$orderby=name");
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 10, top: 25);
+
+        // Assert
+        result.Should().Contain("$skip=10");
+        result.Should().Contain("$top=25");
+        result.Should().Contain("$filter=");
+        result.Should().Contain("$orderby=name");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithExistingSkipAndTop_ShouldUpdateValues()
+    {
+        // Arrange
+        var context = CreateTestHttpContext("?$skip=5&$top=10");
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 15, top: 20);
+
+        // Assert
+        result.Should().Be("$skip=15&$top=20");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithZeroSkipButNonZeroTopAndExistingSkip_ShouldRemoveSkip()
+    {
+        // Arrange
+        var context = CreateTestHttpContext("?$skip=10&$top=25");
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 0, top: 25);
+
+        // Assert
+        result.Should().Be("$top=25");
+        result.Should().NotContain("$skip");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreateLink_WithNonZeroSkipButZeroTopAndExistingTop_ShouldRemoveTop()
+    {
+        // Arrange
+        var context = CreateTestHttpContext("?$skip=10&$top=25");
+
+        // Act
+        var result = StorageController.CreateLink(context.Request, skip: 10, top: 0);
+
+        // Assert
+        result.Should().Be("$skip=10");
+        result.Should().NotContain("$top");
+    }
+
+    #endregion
+
+    #region CalculateNextLinkParameters Tests
+
+    [Fact(Timeout = 15000)]
+    public void CalculateNextLinkParameters_WithMoreResultsAvailable_ShouldReturnNextPageParameters()
+    {
+        // Arrange
+        int currentSkip = 0;
+        int currentTop = 25;
+        int resultCount = 25;
+        int filteredCount = 100;
+
+        // Act
+        var result = StorageController.CalculateNextLinkParameters(currentSkip, currentTop, resultCount, filteredCount);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((25, 25));
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculateNextLinkParameters_WithNoMoreResults_ShouldReturnNull()
+    {
+        // Arrange
+        int currentSkip = 75;
+        int currentTop = 25;
+        int resultCount = 25;
+        int filteredCount = 100;
+
+        // Act
+        var result = StorageController.CalculateNextLinkParameters(currentSkip, currentTop, resultCount, filteredCount);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculateNextLinkParameters_WithPartialLastPage_ShouldReturnNull()
+    {
+        // Arrange
+        int currentSkip = 90;
+        int currentTop = 25;
+        int resultCount = 10;
+        int filteredCount = 100;
+
+        // Act
+        var result = StorageController.CalculateNextLinkParameters(currentSkip, currentTop, resultCount, filteredCount);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculateNextLinkParameters_WithFirstPage_ShouldCalculateCorrectNextSkip()
+    {
+        // Arrange
+        int currentSkip = 0;
+        int currentTop = 50;
+        int resultCount = 50;
+        int filteredCount = 150;
+
+        // Act
+        var result = StorageController.CalculateNextLinkParameters(currentSkip, currentTop, resultCount, filteredCount);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((50, 50));
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculateNextLinkParameters_WithZeroResults_ShouldReturnNull()
+    {
+        // Arrange
+        int currentSkip = 0;
+        int currentTop = 25;
+        int resultCount = 0;
+        int filteredCount = 0;
+
+        // Act
+        var result = StorageController.CalculateNextLinkParameters(currentSkip, currentTop, resultCount, filteredCount);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculateNextLinkParameters_WithExactlyOnePageOfResults_ShouldReturnNull()
+    {
+        // Arrange
+        int currentSkip = 0;
+        int currentTop = 25;
+        int resultCount = 25;
+        int filteredCount = 25;
+
+        // Act
+        var result = StorageController.CalculateNextLinkParameters(currentSkip, currentTop, resultCount, filteredCount);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    #endregion
+
+    #region CalculatePrevLinkParameters Tests
+
+    [Fact(Timeout = 15000)]
+    public void CalculatePrevLinkParameters_WithSkipGreaterThanZero_ShouldReturnPreviousPageParameters()
+    {
+        // Arrange
+        int currentSkip = 25;
+        int currentTop = 25;
+
+        // Act
+        var result = StorageController.CalculatePrevLinkParameters(currentSkip, currentTop);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((0, 25));
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculatePrevLinkParameters_WithSkipZero_ShouldReturnNull()
+    {
+        // Arrange
+        int currentSkip = 0;
+        int currentTop = 25;
+
+        // Act
+        var result = StorageController.CalculatePrevLinkParameters(currentSkip, currentTop);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculatePrevLinkParameters_WithSkipLessThanTop_ShouldReturnZeroSkip()
+    {
+        // Arrange
+        int currentSkip = 10;
+        int currentTop = 25;
+
+        // Act
+        var result = StorageController.CalculatePrevLinkParameters(currentSkip, currentTop);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((0, 25));
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculatePrevLinkParameters_WithSkipEqualToTop_ShouldReturnZeroSkip()
+    {
+        // Arrange
+        int currentSkip = 25;
+        int currentTop = 25;
+
+        // Act
+        var result = StorageController.CalculatePrevLinkParameters(currentSkip, currentTop);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((0, 25));
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculatePrevLinkParameters_WithLargeSkip_ShouldCalculateCorrectPreviousSkip()
+    {
+        // Arrange
+        int currentSkip = 100;
+        int currentTop = 25;
+
+        // Act
+        var result = StorageController.CalculatePrevLinkParameters(currentSkip, currentTop);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((75, 25));
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CalculatePrevLinkParameters_WithDifferentTopSize_ShouldUseCurrentTop()
+    {
+        // Arrange
+        int currentSkip = 50;
+        int currentTop = 50;
+
+        // Act
+        var result = StorageController.CalculatePrevLinkParameters(currentSkip, currentTop);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().Be((0, 50));
+    }
+
+    #endregion
+
+    #region BuildServiceProvider Tests
+
+    [Fact(Timeout = 15000)]
+    public void BuildServiceProvider_WithValidRequest_ShouldReturnServiceProvider()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.BuildServiceProvider(context.Request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeAssignableTo<IServiceProvider>();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void BuildServiceProvider_ShouldSetODataFeatureServices()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var result = StorageController.BuildServiceProvider(context.Request);
+
+        // Assert
+        context.Request.ODataFeature().Services.Should().NotBeNull();
+        context.Request.ODataFeature().Services.Should().Be(result);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void BuildServiceProvider_ShouldRegisterDefaultQueryConfigurations()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var provider = StorageController.BuildServiceProvider(context.Request);
+
+        // Assert
+        var config = provider.GetService(typeof(DefaultQueryConfigurations));
+        config.Should().NotBeNull();
+        config.Should().BeOfType<DefaultQueryConfigurations>();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void BuildServiceProvider_ShouldRegisterODataQuerySettings()
+    {
+        // Arrange
+        var context = CreateTestHttpContext();
+
+        // Act
+        var provider = StorageController.BuildServiceProvider(context.Request);
+
+        // Assert
+        var settings = provider.GetService(typeof(ODataQuerySettings));
+        settings.Should().NotBeNull();
+        settings.Should().BeOfType<ODataQuerySettings>();
+    }
+
+    #endregion
+
+    #region CreatePagedResponse Tests
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithValidParameters_ShouldCreateResponse()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions();
+        var results = new List<object> { new { Id = 1 }, new { Id = 2 } };
+        int totalCount = 100;
+        int filteredCount = 50;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, results, totalCount, filteredCount);
+
+        // Assert
+        response.Should().NotBeNull();
+        response.Items.Should().HaveCount(2);
+        response.TotalCount.Should().Be(100);
+        response.FilteredCount.Should().Be(50);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithNullResults_ShouldReturnEmptyItems()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions();
+        int totalCount = 0;
+        int filteredCount = 0;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, null, totalCount, filteredCount);
+
+        // Assert
+        response.Should().NotBeNull();
+        response.Items.Should().BeEmpty();
+        response.TotalCount.Should().Be(0);
+        response.FilteredCount.Should().Be(0);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithMoreResultsAvailable_ShouldHaveNextLink()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions("?$skip=0&$top=25");
+        var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
+        int totalCount = 100;
+        int filteredCount = 100;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, results, totalCount, filteredCount);
+
+        // Assert
+        response.NextLink.Should().NotBeNull();
+        response.NextLink.Should().Contain("$skip=25");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithNoMoreResults_ShouldNotHaveNextLink()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions("?$skip=75&$top=25");
+        var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
+        int totalCount = 100;
+        int filteredCount = 100;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, results, totalCount, filteredCount);
+
+        // Assert
+        response.NextLink.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithSkipGreaterThanZero_ShouldHavePrevLink()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions("?$skip=25&$top=25");
+        var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
+        int totalCount = 100;
+        int filteredCount = 100;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, results, totalCount, filteredCount);
+
+        // Assert
+        response.PrevLink.Should().NotBeNull();
+        response.PrevLink.Should().NotContain("$skip");
+        response.PrevLink.Should().Contain("$top=25");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithSkipZero_ShouldNotHavePrevLink()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions("?$skip=0&$top=25");
+        var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
+        int totalCount = 100;
+        int filteredCount = 100;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, results, totalCount, filteredCount);
+
+        // Assert
+        response.PrevLink.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void CreatePagedResponse_WithEmptyResults_ShouldHaveZeroCounts()
+    {
+        // Arrange
+        var queryOptions = CreateTestQueryOptions();
+        var results = new List<object>();
+        int totalCount = 0;
+        int filteredCount = 0;
+
+        // Act
+        var response = StorageController.CreatePagedResponse(queryOptions, results, totalCount, filteredCount);
+
+        // Assert
+        response.Items.Should().BeEmpty();
+        response.TotalCount.Should().Be(0);
+        response.FilteredCount.Should().Be(0);
+        response.NextLink.Should().BeNull();
+        response.PrevLink.Should().BeNull();
+    }
+
+    #endregion
+}
