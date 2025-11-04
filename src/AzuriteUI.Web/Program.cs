@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Controllers.Models;
 using AzuriteUI.Web.Extensions;
 using AzuriteUI.Web.Filters;
 using AzuriteUI.Web.Services.Azurite;
@@ -5,9 +6,7 @@ using AzuriteUI.Web.Services.CacheDb;
 using AzuriteUI.Web.Services.CacheSync;
 using AzuriteUI.Web.Services.Health;
 using AzuriteUI.Web.Services.Repositories;
-using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OData.ModelBuilder;
 using Scalar.AspNetCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -40,40 +39,23 @@ builder.Services.AddHostedService<CacheSyncScheduler>();
 builder.Services.AddScoped<IStorageRepository, StorageRepository>();
 
 // OData IEdmModel registration for the OData-based controllers
-ODataConventionModelBuilder odataBuilder = new();
-odataBuilder.EnableLowerCamelCase();
-
-// Configuration of the ContainerDTO entity
-var containerEntity = odataBuilder.EntitySet<ContainerDTO>("Containers").EntityType;
-containerEntity.HasKey(c => c.Name);
-containerEntity.Ignore(c => c.Metadata); // Ignore Metadata dictionary for OData $select
-
-// Configuration of the BlobDTO entity
-var blobEntity = odataBuilder.EntitySet<BlobDTO>("Blobs").EntityType;
-blobEntity.HasKey(b => new { b.ContainerName, b.Name });
-blobEntity.Ignore(b => b.Metadata); // Ignore Metadata dictionary for OData $select
-blobEntity.Ignore(b => b.Tags); // Ignore Tags dictionary for OData $select
-
-// Configuration of the UploadDTO entity
-var uploadEntity = odataBuilder.EntitySet<UploadDTO>("Uploads").EntityType;
-uploadEntity.HasKey(u => u.Id);
-
-// Add the IEdmModel to services
-builder.Services.AddSingleton(odataBuilder.GetEdmModel());
+builder.Services.AddSingleton(ODataModel.BuildEdmModel());
 
 // API Controllers with JSON
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<AzuriteExceptionFilter>();
-})
-.AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.AllowTrailingCommas = true;
-    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
-    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-});
+builder.Services
+    .AddControllers(options =>
+    {
+        options.Filters.Add<AzuriteExceptionFilter>();
+        options.Filters.Add<DtoHeaderFilter>();
+    })
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.AllowTrailingCommas = true;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 
 // Health Checks
 builder.Services.AddHealthChecks()

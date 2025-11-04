@@ -25,6 +25,7 @@ insert_final_newline = false
 
 # Explicit disable
 dotnet_diagnostic.CA1873.severity = none
+dotnet_diagnostic.IDE0053.severity = none
 dotnet_diagnostic.xUnit1051.severity = none
 
 # Organize usings
