@@ -50,7 +50,8 @@ Currently, there are 4 exception types, but they are NOT part of a unified hiera
 
 ## Phase 1: Refactor Exception Hierarchy
 
-### Objective
+### Phase 1 Objective
+
 Refactor the three specific exception types to inherit from `AzuriteServiceException` and set their appropriate HTTP status codes. This dramatically simplifies the filter logic.
 
 ### 1.1 Refactor ResourceNotFoundException
@@ -58,12 +59,14 @@ Refactor the three specific exception types to inherit from `AzuriteServiceExcep
 **File**: `src/AzuriteUI.Web/Services/Azurite/Exceptions/ResourceNotFoundException.cs`
 
 **Changes**:
+
 - Change base class from `Exception` to `AzuriteServiceException`
 - Set `StatusCode = StatusCodes.Status404NotFound` in all constructors
 - Preserve existing `ResourceName` property
 - Keep all three standard exception constructors
 
 **Implementation Example**:
+
 ```csharp
 public class ResourceNotFoundException : AzuriteServiceException
 {
@@ -99,12 +102,14 @@ public class ResourceNotFoundException : AzuriteServiceException
 **File**: `src/AzuriteUI.Web/Services/Azurite/Exceptions/ResourceExistsException.cs`
 
 **Changes**:
+
 - Change base class from `Exception` to `AzuriteServiceException`
 - Set `StatusCode = StatusCodes.Status409Conflict` in all constructors
 - Preserve existing `ResourceName` property
 - Keep all three standard exception constructors
 
 **Implementation Example**:
+
 ```csharp
 public class ResourceExistsException : AzuriteServiceException
 {
@@ -140,11 +145,13 @@ public class ResourceExistsException : AzuriteServiceException
 **File**: `src/AzuriteUI.Web/Services/Azurite/Exceptions/RangeNotSatisfiableException.cs`
 
 **Changes**:
+
 - Change base class from `Exception` to `AzuriteServiceException`
 - Set `StatusCode = StatusCodes.Status416RangeNotSatisfiable` in all constructors
 - Keep all three standard exception constructors
 
 **Implementation Example**:
+
 ```csharp
 public class RangeNotSatisfiableException : AzuriteServiceException
 {
@@ -175,6 +182,7 @@ public class RangeNotSatisfiableException : AzuriteServiceException
 **File**: `src/AzuriteUI.Web/Services/Azurite/AzuriteService.cs`
 
 **Verification**: The existing `ConvertAzuriteException` method should continue to work without changes:
+
 ```csharp
 internal static Exception ConvertAzuriteException(RequestFailedException ex, string? resourceName = null)
 {
@@ -195,12 +203,14 @@ The StatusCode will be set automatically by the constructors, and then the speci
 **Check if tests exist**: Look for unit tests in `tests/AzuriteUI.Web.UnitTests/Services/Azurite/Exceptions/`
 
 **Create or update tests** to verify:
+
 - Each exception type has correct StatusCode after construction
 - ResourceName property still works
 - Base class properties (Message, InnerException) still work
 - Inheritance chain is correct (can catch as AzuriteServiceException)
 
 **Test Example**:
+
 ```csharp
 [Test]
 public void ResourceNotFoundException_ShouldHaveStatusCode404()
@@ -229,7 +239,8 @@ public void ResourceNotFoundException_CanBeCaughtAsAzuriteServiceException()
 
 ## Phase 2: Implement Exception Filter
 
-### Objective
+### Phase 2 Objective
+
 Create a global exception filter that catches `AzuriteServiceException` (including all derived types) and converts them to proper HTTP responses.
 
 ### 2.1 Create AzuriteExceptionFilter Class
@@ -237,6 +248,7 @@ Create a global exception filter that catches `AzuriteServiceException` (includi
 **File**: `src/AzuriteUI.Web/Filters/AzuriteExceptionFilter.cs`
 
 **Requirements**:
+
 - Implement `IExceptionFilter`
 - Check if exception is `AzuriteServiceException`
 - Use exception's `StatusCode` property
@@ -245,6 +257,7 @@ Create a global exception filter that catches `AzuriteServiceException` (includi
 - Set `ExceptionHandled = true` only for AzuriteServiceException
 
 **Implementation**:
+
 ```csharp
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -358,12 +371,15 @@ public class AzuriteExceptionFilter : IExceptionFilter
 **Change**: Add the filter to the MVC configuration
 
 **Find this line**:
+
 ```csharp
 builder.Services.AddControllers();
 ```
 
 **Replace with**:
+
 ```csharp
+
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<AzuriteExceptionFilter>();
@@ -376,7 +392,8 @@ builder.Services.AddControllers(options =>
 
 ## Phase 3: Unit Tests for Exception Filter
 
-### Objective
+### Phase 3 Objective
+
 Create comprehensive unit tests for the `AzuriteExceptionFilter` class.
 
 ### 3.1 Create Test Class
@@ -384,6 +401,7 @@ Create comprehensive unit tests for the `AzuriteExceptionFilter` class.
 **File**: `tests/AzuriteUI.Web.UnitTests/Filters/AzuriteExceptionFilter_Tests.cs`
 
 **Test Structure**:
+
 - Decorate with `[ExcludeFromCodeCoverage]`
 - Use regions for each test group
 - 15 second timeout per test
@@ -432,6 +450,7 @@ Create comprehensive unit tests for the `AzuriteExceptionFilter` class.
    - Does NOT create result
 
 **Example Test**:
+
 ```csharp
 using AzuriteUI.Web.Filters;
 using AzuriteUI.Web.Services.Azurite.Exceptions;
@@ -719,7 +738,8 @@ public class AzuriteExceptionFilter_Tests
 
 ## Phase 4: API/Integration Tests
 
-### Objective
+### Phase 4 Objective
+
 Create API tests that verify the exception filter works end-to-end with real HTTP requests.
 
 ### 4.1 Create API Test Class
@@ -727,6 +747,7 @@ Create API tests that verify the exception filter works end-to-end with real HTT
 **File**: `tests/AzuriteUI.Web.IntegrationTests/API/StorageController_ErrorHandling_Tests.cs`
 
 **Test Structure**:
+
 - Use `ServiceFixture` to spin up WebApplicationFactory
 - Use real Azurite test container
 - Trigger real exceptions by making requests that will fail
@@ -743,6 +764,7 @@ Create API tests that verify the exception filter works end-to-end with real HTT
 4. **503 Tests** - (Optional) Stop Azurite and verify service unavailable
 
 **Example Test**:
+
 ```csharp
 using AzuriteUI.Web.IntegrationTests.Helpers;
 using Microsoft.AspNetCore.Http;
@@ -880,17 +902,20 @@ public class StorageController_ErrorHandling_Tests : IDisposable
 ### 5.1 Run Tests
 
 1. **Run unit tests for modified files**:
+
    ```bash
    dotnet test tests/AzuriteUI.Web.UnitTests/Filters/AzuriteExceptionFilter_Tests.cs
    dotnet test tests/AzuriteUI.Web.UnitTests/Services/Azurite/Exceptions/
    ```
 
 2. **Run API tests**:
+
    ```bash
    dotnet test tests/AzuriteUI.Web.IntegrationTests/API/StorageController_ErrorHandling_Tests.cs
    ```
 
 3. **Run full test suite**:
+
    ```bash
    dotnet cake --target=Test
    ```
@@ -898,6 +923,7 @@ public class StorageController_ErrorHandling_Tests : IDisposable
 ### 5.2 Analyze Coverage
 
 1. **Check coverage report**:
+
    ```bash
    # After running dotnet cake, check:
    artifacts/coverage/lcov.info
@@ -1010,6 +1036,7 @@ The refactoring to have all specific exceptions inherit from AzuriteServiceExcep
 The `resourceName` extension in ProblemDetails provides additional context for 404 and 409 errors. This helps API consumers understand which specific resource caused the error without parsing the error message.
 
 Example response:
+
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.4",

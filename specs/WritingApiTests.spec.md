@@ -47,3 +47,69 @@ You can get a reference to the Azurite fixture by using `serviceFixture.Azurite`
 ## Time outs
 
 Add a 60 second timeout to each test that you write.  We will adjust timeouts as needed if this is too short.
+
+## Exception Handling in API Tests
+
+The `AzuriteExceptionFilter` is registered globally to handle exceptions from the AzuriteService layer and convert them into proper HTTP responses with ProblemDetails bodies. When writing API tests, include test cases for error conditions to verify the exception filter works correctly end-to-end.
+
+### Error Scenarios to Test
+
+When writing API tests for endpoints that interact with Azurite, include tests for the following error scenarios:
+
+* **404 Not Found** - Test requests for non-existent resources (containers, blobs):
+
+  * Verify status code is 404
+  * Verify ProblemDetails response structure
+  * Verify `resourceName` is included in extensions when applicable
+
+* **409 Conflict** - Test attempts to create resources that already exist:
+
+  * Verify status code is 409
+  * Verify ProblemDetails response structure
+  * Verify `resourceName` is included in extensions when applicable
+
+* **416 Range Not Satisfiable** - Test invalid byte range requests for blob downloads:
+
+  * Verify status code is 416
+  * Verify ProblemDetails response structure
+
+* **503 Service Unavailable** - Test behavior when Azurite is unavailable (optional, may be complex to simulate)
+
+### Example Error Test
+
+```csharp
+[Fact(Timeout = 60000)]
+public async Task GetContainer_NonExistentContainer_Returns404WithProblemDetails()
+{
+    // Arrange
+    var client = _fixture!.CreateClient();
+    var nonExistentContainer = "container-that-does-not-exist-12345";
+
+    // Act
+    var response = await client.GetAsync($"/api/containers/{nonExistentContainer}");
+
+    // Assert
+    response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+
+    var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+    problemDetails.Should().NotBeNull();
+
+    var root = problemDetails!.RootElement;
+    root.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status404NotFound);
+    root.GetProperty("title").GetString().Should().Be("Not Found");
+    root.GetProperty("detail").GetString().Should().Contain("not found");
+}
+```
+
+### Integration with Endpoint Development
+
+**Important**: Exception handling tests should be integrated into API test classes as endpoints are developed. Do not create a separate `StorageController_ErrorHandling_Tests.cs` class. Instead, include error scenario tests within each endpoint's test class.
+
+For example, when writing tests for a `GetContainer` endpoint:
+
+* Create happy path tests for successful retrieval
+* Create error tests for 404 when container doesn't exist
+* Group both in the same test class
+
+This approach ensures comprehensive coverage of both success and error paths for each endpoint.

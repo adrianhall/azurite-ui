@@ -1,4 +1,5 @@
 using AzuriteUI.Web.Extensions;
+using AzuriteUI.Web.Filters;
 using AzuriteUI.Web.Services.Azurite;
 using AzuriteUI.Web.Services.CacheDb;
 using AzuriteUI.Web.Services.CacheSync;
@@ -61,7 +62,11 @@ uploadEntity.HasKey(u => u.Id);
 builder.Services.AddSingleton(odataBuilder.GetEdmModel());
 
 // API Controllers with JSON
-builder.Services.AddControllers().AddJsonOptions(options =>
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<AzuriteExceptionFilter>();
+})
+.AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.AllowTrailingCommas = true;
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;

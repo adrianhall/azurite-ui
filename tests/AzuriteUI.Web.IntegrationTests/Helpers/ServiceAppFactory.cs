@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AzuriteUI.Web.IntegrationTests.Helpers;
 
@@ -8,6 +9,7 @@ namespace AzuriteUI.Web.IntegrationTests.Helpers;
 /// </summary>
 /// <param name="settings">The settings.</param>
 [ExcludeFromCodeCoverage(Justification = "Test fixture")]
+[SuppressMessage("Style", "IDE0053:Use expression body for lambda expression", Justification = "Readability")]
 public class ServiceAppFactory(IDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
 {
     /// <inheritdoc />
@@ -22,6 +24,12 @@ public class ServiceAppFactory(IDictionary<string, string>? settings = null) : W
                 builder.UseSetting(kvp.Key, kvp.Value);
             }
         }
+
+        // Add test controllers from the test assembly.
+        builder.ConfigureServices(services =>
+        {
+            services.AddControllers().AddApplicationPart(typeof(TestExceptionController).Assembly);
+        });
 
         builder.UseEnvironment("Test");
     }
