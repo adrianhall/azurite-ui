@@ -1,5 +1,8 @@
 using AzuriteUI.Web.Controllers.Models;
+using AzuriteUI.Web.Extensions;
 using AzuriteUI.Web.Services.Repositories;
+using AzuriteUI.Web.Services.Repositories.Models;
+using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Extensions;
 using Microsoft.AspNetCore.OData.Query;
@@ -8,6 +11,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace AzuriteUI.Web.Controllers;
@@ -125,6 +129,7 @@ public partial class StorageController(
     /// <param name="skip">The new value of the skip parameter.</param>
     /// <param name="top">The new value of the top parameter.</param>
     /// <returns>The query string with the updated parameters.</returns>
+    [NonAction]
     internal static string CreateLink(HttpRequest request, int skip = 0, int top = 0)
     {
         Dictionary<string, StringValues> query = QueryHelpers.ParseNullableQuery(request.QueryString.Value) ?? [];
@@ -187,5 +192,59 @@ public partial class StorageController(
         return currentSkip > 0
             ? (Math.Max(0, currentSkip - currentTop), currentTop)
             : null;
-    }    
+    }
+
+    /// <summary>
+    /// Determines if the request has met the preconditions based on the entity's ETag and Last-Modified values.
+    /// </summary>
+    /// <param name="entity">The entity being referenced for a conditional request.</param>
+    /// <returns>The status code to return, or null to continue with the request.</returns>
+    [NonAction]
+    [SuppressMessage("Style", "IDE0046:Convert to conditional expression", Justification = "Readability")]
+    internal int? GetResponseForConditionalRequest(IBaseDTO entity)
+    {
+        RequestHeaders headers = Request.GetTypedHeaders();
+        bool isFetch = Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase)
+            || Request.Method.Equals("HEAD", StringComparison.OrdinalIgnoreCase);
+
+        if (headers.IfMatch.Count > 0 && !headers.IfMatch.Any(e => e.Matches(entity.ETag)))
+        {
+            return StatusCodes.Status412PreconditionFailed;
+        }
+
+        if (headers.IfMatch.Count == 0 && headers.IfUnmodifiedSince.HasValue && headers.IfUnmodifiedSince.Value <= entity.LastModified)
+        {
+            return StatusCodes.Status412PreconditionFailed;
+        }
+
+        if (headers.IfNoneMatch.Count > 0 && headers.IfNoneMatch.Any(e => e.Matches(entity.ETag)))
+        {
+            return isFetch ? StatusCodes.Status304NotModified : StatusCodes.Status412PreconditionFailed;
+        }
+
+        if (headers.IfNoneMatch.Count == 0 && headers.IfModifiedSince.HasValue && headers.IfModifiedSince.Value > entity.LastModified)
+        {
+            return isFetch ? StatusCodes.Status304NotModified : StatusCodes.Status412PreconditionFailed;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns a conditional response based on the given status code.
+    /// </summary>
+    /// <param name="statusCode">The status code to return.</param>
+    /// <param name="entity">The entity to include in the response.</param>
+    /// <returns>The conditional response.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the status code is not a conditional response.</exception>
+    [NonAction]
+    internal IActionResult ConditionalResponse(int statusCode, IBaseDTO entity)
+    {
+        return statusCode switch
+        {
+            StatusCodes.Status304NotModified => StatusCode(StatusCodes.Status304NotModified),
+            StatusCodes.Status412PreconditionFailed => StatusCode(StatusCodes.Status412PreconditionFailed, entity),
+            _ => throw new InvalidOperationException("Invalid status code for conditional response.")
+        };
+    }  
 }

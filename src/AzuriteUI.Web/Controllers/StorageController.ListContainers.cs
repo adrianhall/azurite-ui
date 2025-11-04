@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OData;
 using Microsoft.OData.UriParser;
+using System.Net.Mime;
 
 namespace AzuriteUI.Web.Controllers;
 
@@ -40,7 +41,7 @@ public partial class StorageController : ODataController
     [HttpGet]
     [EndpointName("ListContainers")]
     [EndpointDescription("Lists all containers in the storage account, with OData v4 query support.")]
-    [ProducesResponseType<PagedResponse<ContainerDTO>>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<PagedResponse<ContainerDTO>>(StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
     public virtual async Task<IActionResult> ListContainersAsync(
         [FromQuery(Name = "$count")] bool? count = null,
         [FromQuery(Name = "$filter")] string? filter = null,

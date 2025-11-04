@@ -2,9 +2,11 @@ using AzuriteUI.Web.Controllers;
 using AzuriteUI.Web.Services.Repositories;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Extensions;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using NSubstitute;
@@ -591,6 +593,460 @@ public class StorageController_Tests
         response.FilteredCount.Should().Be(0);
         response.NextLink.Should().BeNull();
         response.PrevLink.Should().BeNull();
+    }
+
+    #endregion
+
+    #region GetResponseForConditionalRequest Tests
+
+    /// <summary>
+    /// Creates a StorageController with the specified request method and headers.
+    /// </summary>
+    private static StorageController CreateControllerWithRequest(
+        string method = "GET",
+        Action<HttpRequest>? configureHeaders = null)
+    {
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+
+        var controller = new StorageController(repository, edmModel, logger);
+        var context = new DefaultHttpContext();
+        context.Request.Method = method;
+
+        configureHeaders?.Invoke(context.Request);
+
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = context
+        };
+
+        return controller;
+    }
+
+    /// <summary>
+    /// Creates a test entity with the specified ETag and LastModified values.
+    /// </summary>
+    private static ContainerDTO CreateTestEntity(string etag = "\"test-etag\"", DateTimeOffset? lastModified = null)
+    {
+        return new ContainerDTO
+        {
+            Name = "test-container",
+            ETag = etag,
+            LastModified = lastModified ?? DateTimeOffset.UtcNow
+        };
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithNoConditionalHeaders_ShouldReturnNull()
+    {
+        // Arrange
+        var controller = CreateControllerWithRequest();
+        var entity = CreateTestEntity();
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithMatchingIfMatch_ShouldReturnNull()
+    {
+        // Arrange
+        var etag = "\"test-etag\"";
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfMatch] = etag;
+        });
+        var entity = CreateTestEntity(etag);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithNonMatchingIfMatch_ShouldReturn412()
+    {
+        // Arrange
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfMatch] = "\"different-etag\"";
+        });
+        var entity = CreateTestEntity("\"test-etag\"");
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status412PreconditionFailed);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfUnmodifiedSinceBeforeLastModified_ShouldReturn412()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifUnmodifiedSince = lastModified.AddHours(-1);
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfUnmodifiedSince] = ifUnmodifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity(lastModified: lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status412PreconditionFailed);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfUnmodifiedSinceAfterLastModified_ShouldReturnNull()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifUnmodifiedSince = lastModified.AddHours(1);
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfUnmodifiedSince] = ifUnmodifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity(lastModified: lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfUnmodifiedSinceEqualToLastModified_ShouldReturn412()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfUnmodifiedSince] = lastModified.ToString("R");
+        });
+        var entity = CreateTestEntity(lastModified: lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status412PreconditionFailed);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithMatchingIfNoneMatchOnGetRequest_ShouldReturn304()
+    {
+        // Arrange
+        var etag = "\"test-etag\"";
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = etag;
+        });
+        var entity = CreateTestEntity(etag);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status304NotModified);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithMatchingIfNoneMatchOnHeadRequest_ShouldReturn304()
+    {
+        // Arrange
+        var etag = "\"test-etag\"";
+        var controller = CreateControllerWithRequest("HEAD", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = etag;
+        });
+        var entity = CreateTestEntity(etag);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status304NotModified);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithMatchingIfNoneMatchOnPutRequest_ShouldReturn412()
+    {
+        // Arrange
+        var etag = "\"test-etag\"";
+        var controller = CreateControllerWithRequest("PUT", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = etag;
+        });
+        var entity = CreateTestEntity(etag);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status412PreconditionFailed);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithNonMatchingIfNoneMatch_ShouldReturnNull()
+    {
+        // Arrange
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = "\"different-etag\"";
+        });
+        var entity = CreateTestEntity("\"test-etag\"");
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfModifiedSinceAfterLastModifiedOnGetRequest_ShouldReturn304()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifModifiedSince = lastModified.AddHours(1);
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfModifiedSince] = ifModifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity(lastModified: lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status304NotModified);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfModifiedSinceAfterLastModifiedOnPutRequest_ShouldReturn412()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifModifiedSince = lastModified.AddHours(1);
+
+        var controller = CreateControllerWithRequest("PUT", request =>
+        {
+            request.Headers[HeaderNames.IfModifiedSince] = ifModifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity(lastModified: lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status412PreconditionFailed);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfModifiedSinceBeforeLastModified_ShouldReturnNull()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifModifiedSince = lastModified.AddHours(-1);
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfModifiedSince] = ifModifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity(lastModified: lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfMatchTakesPrecedenceOverIfUnmodifiedSince_ShouldUseIfMatch()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifUnmodifiedSince = lastModified.AddHours(-1); // Would fail if checked
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfMatch] = "\"test-etag\""; // Matching
+            request.Headers[HeaderNames.IfUnmodifiedSince] = ifUnmodifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity("\"test-etag\"", lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull(); // IfMatch matches, so precondition passes
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithIfNoneMatchTakesPrecedenceOverIfModifiedSince_ShouldUseIfNoneMatch()
+    {
+        // Arrange
+        var lastModified = DateTimeOffset.UtcNow;
+        var ifModifiedSince = lastModified.AddHours(1); // Would return 304 if checked
+
+        var controller = CreateControllerWithRequest("GET", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = "\"different-etag\""; // Non-matching
+            request.Headers[HeaderNames.IfModifiedSince] = ifModifiedSince.ToString("R");
+        });
+        var entity = CreateTestEntity("\"test-etag\"", lastModified);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().BeNull(); // IfNoneMatch doesn't match, so precondition passes
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithCaseInsensitiveGetMethod_ShouldTreatAsFetch()
+    {
+        // Arrange
+        var etag = "\"test-etag\"";
+        var controller = CreateControllerWithRequest("get", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = etag;
+        });
+        var entity = CreateTestEntity(etag);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status304NotModified);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void GetResponseForConditionalRequest_WithCaseInsensitiveHeadMethod_ShouldTreatAsFetch()
+    {
+        // Arrange
+        var etag = "\"test-etag\"";
+        var controller = CreateControllerWithRequest("head", request =>
+        {
+            request.Headers[HeaderNames.IfNoneMatch] = etag;
+        });
+        var entity = CreateTestEntity(etag);
+
+        // Act
+        var result = controller.GetResponseForConditionalRequest(entity);
+
+        // Assert
+        result.Should().Be(StatusCodes.Status304NotModified);
+    }
+
+    #endregion
+
+    #region ConditionalResponse Tests
+
+    [Fact(Timeout = 15000)]
+    public void ConditionalResponse_With304StatusCode_ShouldReturnStatusCodeResult()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+        var entity = CreateTestEntity();
+
+        // Act
+        var result = controller.ConditionalResponse(StatusCodes.Status304NotModified, entity);
+
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>();
+        var statusCodeResult = result as StatusCodeResult;
+        statusCodeResult!.StatusCode.Should().Be(StatusCodes.Status304NotModified);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConditionalResponse_With412StatusCode_ShouldReturnObjectResult()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+        var entity = CreateTestEntity();
+
+        // Act
+        var result = controller.ConditionalResponse(StatusCodes.Status412PreconditionFailed, entity);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = result as ObjectResult;
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status412PreconditionFailed);
+        objectResult.Value.Should().Be(entity);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConditionalResponse_WithInvalidStatusCode_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+        var entity = CreateTestEntity();
+
+        // Act
+        Action act = () => controller.ConditionalResponse(StatusCodes.Status200OK, entity);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Invalid status code for conditional response.");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConditionalResponse_With400StatusCode_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+        var entity = CreateTestEntity();
+
+        // Act
+        Action act = () => controller.ConditionalResponse(StatusCodes.Status400BadRequest, entity);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConditionalResponse_With500StatusCode_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+        var entity = CreateTestEntity();
+
+        // Act
+        Action act = () => controller.ConditionalResponse(StatusCodes.Status500InternalServerError, entity);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
     }
 
     #endregion
