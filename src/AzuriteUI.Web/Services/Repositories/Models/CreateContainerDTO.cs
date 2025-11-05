@@ -4,11 +4,18 @@ using System.ComponentModel.DataAnnotations;
 namespace AzuriteUI.Web.Services.Repositories.Models;
 
 /// <summary>
-/// A data transfer object for creating or updating a container in Azurite.
+/// A data transfer object for creating a container in Azurite.
 /// Contains only the settable fields.
 /// </summary>
-public class ContainerUpdateDTO
+public class CreateContainerDTO
 {
+    /// <summary>
+    /// The name of the container to create.
+    /// </summary>
+    [property: Required]
+    [property: Description("The name of the container to create")]
+    public required string ContainerName { get; set; }
+
     /// <summary>
     /// Specifies the default encryption scope for the container.
     /// </summary>

@@ -113,15 +113,19 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        var updateDto = new ContainerUpdateDTO { Metadata = new Dictionary<string, string> { ["test"] = "value" } };
+        var dto = new CreateContainerDTO
+        {
+            ContainerName = containerName,
+            Metadata = new Dictionary<string, string> { ["test"] = "value" }
+        };
 
         // Act
-        var result = await _repository.CreateContainerAsync(containerName, updateDto);
+        var result = await _repository.CreateContainerAsync(dto);
 
         // Assert
         result.Should().NotBeNull();
         result.Name.Should().Be(containerName);
-        result.Metadata.Should().BeEquivalentTo(updateDto.Metadata);
+        result.Metadata.Should().BeEquivalentTo(dto.Metadata);
 
         // Verify in Azurite
         var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
@@ -139,10 +143,14 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        var updateDto = new ContainerUpdateDTO { PublicAccess = "blob" };
+        var dto = new CreateContainerDTO
+        {
+            ContainerName = containerName,
+            PublicAccess = "blob"
+        };
 
         // Act
-        var result = await _repository.CreateContainerAsync(containerName, updateDto);
+        var result = await _repository.CreateContainerAsync(dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -155,10 +163,10 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         await _fixture.CreateContainerAsync(containerName);
-        var updateDto = new ContainerUpdateDTO();
+        var dto = new CreateContainerDTO { ContainerName = containerName };
 
         // Act
-        Func<Task> act = async () => await _repository.CreateContainerAsync(containerName, updateDto);
+        Func<Task> act = async () => await _repository.CreateContainerAsync(dto);
 
         // Assert
         await act.Should().ThrowAsync<ResourceExistsException>();
@@ -171,8 +179,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        var updateDto = new ContainerUpdateDTO();
-        await _repository.CreateContainerAsync(containerName, updateDto);
+        var dto = new CreateContainerDTO { ContainerName = containerName };
+        await _repository.CreateContainerAsync(dto);
 
         // Act
         await _repository.DeleteContainerAsync(containerName);
@@ -207,8 +215,12 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        var updateDto = new ContainerUpdateDTO { Metadata = new Dictionary<string, string> { ["key"] = "value" } };
-        await _repository.CreateContainerAsync(containerName, updateDto);
+        var dto = new CreateContainerDTO
+        {
+            ContainerName = containerName,
+            Metadata = new Dictionary<string, string> { ["key"] = "value" }
+        };
+        await _repository.CreateContainerAsync(dto);
 
         // Act
         var result = await _repository.GetContainerAsync(containerName);
@@ -216,7 +228,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Assert
         result.Should().NotBeNull();
         result!.Name.Should().Be(containerName);
-        result.Metadata.Should().BeEquivalentTo(updateDto.Metadata);
+        result.Metadata.Should().BeEquivalentTo(dto.Metadata);
     }
 
     [Fact(Timeout = 60000)]
@@ -239,10 +251,11 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
-        var updateDto = new ContainerUpdateDTO
+        var updateDto = new UpdateContainerDTO
         {
+            ContainerName = containerName,
             Metadata = new Dictionary<string, string>
             {
                 ["updated"] = "true",
@@ -251,7 +264,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         };
 
         // Act
-        var result = await _repository.UpdateContainerAsync(containerName, updateDto);
+        var result = await _repository.UpdateContainerAsync(updateDto);
 
         // Assert
         result.Should().NotBeNull();
@@ -268,10 +281,10 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        var updateDto = new ContainerUpdateDTO();
+        var updateDto = new UpdateContainerDTO { ContainerName = containerName };
 
         // Act
-        Func<Task> act = async () => await _repository.UpdateContainerAsync(containerName, updateDto);
+        Func<Task> act = async () => await _repository.UpdateContainerAsync(updateDto);
 
         // Assert
         await act.Should().ThrowAsync<ResourceNotFoundException>();
@@ -285,7 +298,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "test content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -318,7 +331,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
         var content = "test content";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, content);
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -343,7 +356,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "test content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -367,7 +380,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         // Act
         Func<Task> act = async () => await _repository.DeleteBlobAsync(containerName, blobName);
@@ -384,7 +397,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "test content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -404,7 +417,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         // Act
         var result = await _repository.GetBlobAsync(containerName, blobName);
@@ -421,7 +434,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "test content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -452,7 +465,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         var updateDto = new BlobUpdateDTO();
 
         // Act
@@ -471,7 +484,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         var expectedContent = "Hello, StorageRepository!";
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, expectedContent);
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -500,7 +513,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         var expectedContent = "0123456789";
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, expectedContent);
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -524,7 +537,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         // Act
         Func<Task> act = async () => await _repository.DownloadBlobAsync(containerName, blobName);
@@ -541,7 +554,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -593,7 +606,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "existing content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -620,7 +633,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -664,7 +677,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -692,7 +705,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -741,7 +754,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -795,7 +808,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -840,7 +853,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -879,7 +892,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {
@@ -924,10 +937,14 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
     {
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
-        var updateDto = new ContainerUpdateDTO { Metadata = new Dictionary<string, string> { ["source"] = "test" } };
+        var dto = new CreateContainerDTO
+        {
+            ContainerName = containerName,
+            Metadata = new Dictionary<string, string> { ["source"] = "test" }
+        };
 
         // Act
-        var result = await _repository.CreateContainerAsync(containerName, updateDto);
+        var result = await _repository.CreateContainerAsync(dto);
 
         // Assert
         // Verify Azurite has the container
@@ -943,7 +960,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Verify repository returns cached data
         var repoContainer = await _repository.GetContainerAsync(containerName);
         repoContainer.Should().NotBeNull();
-        repoContainer!.Metadata.Should().BeEquivalentTo(updateDto.Metadata);
+        repoContainer!.Metadata.Should().BeEquivalentTo(dto.Metadata);
     }
 
     [Fact(Timeout = 60000)]
@@ -952,7 +969,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "test content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -984,7 +1001,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
         await _fixture.CreateBlobAsync(containerName, blobName, "test content");
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
@@ -1012,7 +1029,7 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         // Arrange
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
-        await _repository.CreateContainerAsync(containerName, new ContainerUpdateDTO());
+        await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
 
         var uploadDto = new CreateUploadRequestDTO
         {

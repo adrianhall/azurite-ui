@@ -140,23 +140,24 @@ public class StorageRepository(
     /// <summary>
     /// Creates a new container in Azurite and updates the cache.
     /// </summary>
-    /// <param name="containerName">The name of the container to create.</param>
-    /// <param name="updateDto">The container properties to set.</param>
+    /// <param name="dto">The container properties to set.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The created container DTO.</returns>
-    public async Task<ContainerDTO> CreateContainerAsync(string containerName, ContainerUpdateDTO updateDto, CancellationToken cancellationToken = default)
+    public async Task<ContainerDTO> CreateContainerAsync(CreateContainerDTO dto, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("CreateContainerAsync('{containerName}') called", containerName);
+        logger.LogDebug("CreateContainerAsync({container}) called", JsonSerializer.Serialize(dto));
+        ValidateContainerName(dto.ContainerName);
+
         var containerProperties = new AzuriteContainerProperties
         {
-            PublicAccessType = updateDto.PublicAccess is not null ? ConvertToPublicAccessType(updateDto.PublicAccess) : null,
-            DefaultEncryptionScope = updateDto.DefaultEncryptionScope,
-            PreventEncryptionScopeOverride = updateDto.PreventEncryptionScopeOverride,
-            Metadata = updateDto.Metadata
+            PublicAccessType = dto.PublicAccess is not null ? ConvertToPublicAccessType(dto.PublicAccess) : null,
+            DefaultEncryptionScope = dto.DefaultEncryptionScope,
+            PreventEncryptionScopeOverride = dto.PreventEncryptionScopeOverride,
+            Metadata = dto.Metadata
         };
-        var azuriteContainer = await azurite.CreateContainerAsync(containerName, containerProperties, cancellationToken);
+        var azuriteContainer = await azurite.CreateContainerAsync(dto.ContainerName, containerProperties, cancellationToken);
         await context.UpsertContainerAsync(azuriteContainer, cancellationToken);
-        return await Containers.SingleAsync(c => c.Name == containerName, cancellationToken);
+        return await Containers.SingleAsync(c => c.Name == dto.ContainerName, cancellationToken);
     }
 
     /// <summary>
@@ -168,8 +169,17 @@ public class StorageRepository(
     public async Task DeleteContainerAsync(string containerName, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("DeleteContainerAsync('{containerName}') called", containerName);
-        await azurite.DeleteContainerAsync(containerName, cancellationToken);
-        await context.RemoveContainerAsync(containerName, cancellationToken);
+        ValidateContainerName(containerName);
+        try
+        {
+            await azurite.DeleteContainerAsync(containerName, cancellationToken);
+            await context.RemoveContainerAsync(containerName, cancellationToken);
+        }
+        catch (AzuriteServiceException ex) when (ex.StatusCode == StatusCodes.Status404NotFound)
+        {
+            // Ensure the container is removed from the cache even if it was not found in Azurite.
+            await context.RemoveContainerAsync(containerName, cancellationToken);
+        }
     }
 
     /// <summary>
@@ -181,27 +191,30 @@ public class StorageRepository(
     public async Task<ContainerDTO?> GetContainerAsync(string containerName, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("GetContainerAsync('{containerName}') called", containerName);
+        ValidateContainerName(containerName);
         return await Containers.FirstOrDefaultAsync(c => c.Name == containerName, cancellationToken);
     }
 
     /// <summary>
     /// Updates an existing container in Azurite and updates the cache.
     /// </summary>
-    /// <param name="containerName">The name of the container to update.</param>
-    /// <param name="updateDto">The container properties to update.</param>
+    /// <param name="dto">The container properties to update.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The updated container DTO.</returns>
-    public async Task<ContainerDTO> UpdateContainerAsync(string containerName, ContainerUpdateDTO updateDto, CancellationToken cancellationToken = default)
+    public async Task<ContainerDTO> UpdateContainerAsync(UpdateContainerDTO dto, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("UpdateContainerAsync('{containerName}') called", containerName);
+        logger.LogDebug("UpdateContainerAsync('{containerProps}') called", JsonSerializer.Serialize(dto));
+        ValidateContainerName(dto.ContainerName);
+
         var properties = new AzuriteContainerProperties
         {
-            Metadata = updateDto.Metadata
+            Metadata = dto.Metadata
         };
-        var azuriteContainer = await azurite.UpdateContainerAsync(containerName, properties, cancellationToken);
+        var azuriteContainer = await azurite.UpdateContainerAsync(dto.ContainerName, properties, cancellationToken);
         await context.UpsertContainerAsync(azuriteContainer, cancellationToken);
+
         // Single is ok here because we've done an Upsert on the database.
-        return await Containers.SingleAsync(c => c.Name == containerName, cancellationToken);
+        return await Containers.SingleAsync(c => c.Name == dto.ContainerName, cancellationToken);
     }
     #endregion
 
@@ -519,6 +532,19 @@ public class StorageRepository(
             {
                 StatusCode = StatusCodes.Status400BadRequest
             };
+        }
+    }
+
+    /// <summary>
+    /// Throws an exception if the container name is not valid.
+    /// </summary>
+    /// <param name="containerName">The name of the container to validate.</param>
+    /// <exception cref="AzuriteServiceException">Thrown if the container name is invalid.</exception>
+    internal static void ValidateContainerName(string containerName)
+    {
+        if (string.IsNullOrWhiteSpace(containerName))
+        {
+            throw new AzuriteServiceException("Container name must be provided.") { StatusCode = StatusCodes.Status400BadRequest };
         }
     }
 }

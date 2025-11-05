@@ -16,6 +16,7 @@ public partial class StorageController : ODataController
     /// <returns>The container properties if found; otherwise, a NotFound result.</returns>
     [HttpGet("{containerName}")]
     [EndpointName("GetContainerByName")]
+    [EndpointDescription("Retrieves the properties of a specific container by its name.")]
     [ProducesResponseType<ContainerDTO>(StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
     public virtual async Task<IActionResult> GetContainerByNameAsync(
         [FromRoute] string containerName,

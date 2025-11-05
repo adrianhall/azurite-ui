@@ -1,4 +1,5 @@
 using AzuriteUI.Web.Controllers;
+using AzuriteUI.Web.Services.Azurite.Exceptions;
 using AzuriteUI.Web.Services.Repositories;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Http;
@@ -1047,6 +1048,54 @@ public class StorageController_Tests
 
         // Assert
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    #endregion
+
+    #region DeleteContainerAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task DeleteContainerAsync_WhenAzuriteServiceExceptionWith404IsThrown_ShouldReturnNoContent()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        // Set up HttpContext
+        var context = new DefaultHttpContext();
+        context.Request.Method = "DELETE";
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = context
+        };
+
+        var containerName = "test-container";
+        var container = new ContainerDTO
+        {
+            Name = containerName,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow
+        };
+
+        // Mock repository to return a container
+        repository.GetContainerAsync(containerName, Arg.Any<CancellationToken>())
+            .Returns(container);
+
+        // Mock repository to throw AzuriteServiceException with 404 when deleting
+        var exception = new AzuriteServiceException("Container not found in Azurite")
+        {
+            StatusCode = StatusCodes.Status404NotFound
+        };
+        repository.DeleteContainerAsync(containerName, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(exception));
+
+        // Act
+        var result = await controller.DeleteContainerAsync(containerName);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
     }
 
     #endregion

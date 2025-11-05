@@ -882,8 +882,9 @@ public class StorageRepository_Tests : SqliteDbTests
         using var context = CreateDbContext();
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var dto = new CreateContainerDTO
         {
+            ContainerName = "new-container",
             PublicAccess = "blob",
             DefaultEncryptionScope = "test-scope",
             PreventEncryptionScopeOverride = true,
@@ -900,7 +901,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(azuriteContainer);
 
         // Act
-        var result = await repository.CreateContainerAsync("new-container", updateDto, CancellationToken.None);
+        var result = await repository.CreateContainerAsync(dto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -932,8 +933,9 @@ public class StorageRepository_Tests : SqliteDbTests
         using var context = CreateDbContext();
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var dto = new CreateContainerDTO
         {
+            ContainerName = "new-container",
             PublicAccess = null!,
             Metadata = new Dictionary<string, string>()
         };
@@ -944,7 +946,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(azuriteContainer);
 
         // Act
-        var result = await repository.CreateContainerAsync("new-container", updateDto, CancellationToken.None);
+        var result = await repository.CreateContainerAsync(dto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -963,8 +965,9 @@ public class StorageRepository_Tests : SqliteDbTests
         using var context = CreateDbContext();
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var dto = new CreateContainerDTO
         {
+            ContainerName = "new-container",
             PublicAccess = "none",
             Metadata = new Dictionary<string, string>()
         };
@@ -975,7 +978,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(azuriteContainer);
 
         // Act
-        var result = await repository.CreateContainerAsync("new-container", updateDto, CancellationToken.None);
+        var result = await repository.CreateContainerAsync(dto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -989,8 +992,9 @@ public class StorageRepository_Tests : SqliteDbTests
         using var context = CreateDbContext();
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var dto = new CreateContainerDTO
         {
+            ContainerName = "new-container",
             PublicAccess = "none",
             Metadata = new Dictionary<string, string>()
         };
@@ -999,7 +1003,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .ThrowsAsync(new AzuriteServiceException("Container creation failed"));
 
         // Act
-        var act = async () => await repository.CreateContainerAsync("new-container", updateDto, CancellationToken.None);
+        var act = async () => await repository.CreateContainerAsync(dto, CancellationToken.None);
 
         // Assert
         await act.Should().ThrowAsync<AzuriteServiceException>();
@@ -1018,8 +1022,9 @@ public class StorageRepository_Tests : SqliteDbTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var updateDto = new ContainerUpdateDTO
+        var dto = new CreateContainerDTO
         {
+            ContainerName = "new-container",
             PublicAccess = "none",
             Metadata = new Dictionary<string, string>()
         };
@@ -1028,7 +1033,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .ThrowsAsync(new OperationCanceledException());
 
         // Act
-        var act = async () => await repository.CreateContainerAsync("new-container", updateDto, cts.Token);
+        var act = async () => await repository.CreateContainerAsync(dto, cts.Token);
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
@@ -1133,6 +1138,66 @@ public class StorageRepository_Tests : SqliteDbTests
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DeleteContainerAsync_WhenAzuriteReturns404_ShouldRemoveFromCacheAndNotThrow()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var container = new ContainerModel
+        {
+            Name = "cached-but-not-in-azurite",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "test-etag",
+            LastModified = DateTimeOffset.UtcNow
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        _mockAzuriteService.DeleteContainerAsync("cached-but-not-in-azurite", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AzuriteServiceException("Container not found") { StatusCode = StatusCodes.Status404NotFound });
+
+        // Act
+        await repository.DeleteContainerAsync("cached-but-not-in-azurite", CancellationToken.None);
+
+        // Assert
+        var cached = await context.Containers.FirstOrDefaultAsync(c => c.Name == "cached-but-not-in-azurite");
+        cached.Should().BeNull();
+
+        await _mockAzuriteService.Received(1).DeleteContainerAsync("cached-but-not-in-azurite", Arg.Any<CancellationToken>());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DeleteContainerAsync_WhenAzuriteReturns400_ShouldThrowWithoutRemoving()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var container = new ContainerModel
+        {
+            Name = "cached-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "test-etag",
+            LastModified = DateTimeOffset.UtcNow
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+        _mockAzuriteService.DeleteContainerAsync("cached-container", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AzuriteServiceException("Bad Request") { StatusCode = StatusCodes.Status400BadRequest });
+
+        // Act
+        Func<Task> act = async () => await repository.DeleteContainerAsync("cached-container", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<AzuriteServiceException>();
+        var cached = await context.Containers.FirstOrDefaultAsync(c => c.Name == "cached-container");
+        cached.Should().NotBeNull();
+        cached.ETag.Should().Be("test-etag");
+        cached.CachedCopyId.Should().NotBeNullOrEmpty();
     }
 
     #endregion
@@ -1266,8 +1331,9 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var updateDto = new UpdateContainerDTO
         {
+            ContainerName = "existing-container",
             Metadata = new Dictionary<string, string> { ["new"] = "value" }
         };
 
@@ -1278,7 +1344,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(updatedAzuriteContainer);
 
         // Act
-        var result = await repository.UpdateContainerAsync("existing-container", updateDto, CancellationToken.None);
+        var result = await repository.UpdateContainerAsync(updateDto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -1311,11 +1377,9 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var updateDto = new UpdateContainerDTO
         {
-            PublicAccess = "blob",
-            DefaultEncryptionScope = "new-scope",
-            PreventEncryptionScopeOverride = true,
+            ContainerName = "existing-container",
             Metadata = new Dictionary<string, string> { ["key"] = "value" }
         };
 
@@ -1326,19 +1390,16 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(updatedAzuriteContainer);
 
         // Act
-        var result = await repository.UpdateContainerAsync("existing-container", updateDto, CancellationToken.None);
+        var result = await repository.UpdateContainerAsync(updateDto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
 
-        // Verify only Metadata was passed to Azurite (not PublicAccessType, DefaultEncryptionScope, PreventEncryptionScopeOverride)
+        // Verify Metadata was passed to Azurite
         await _mockAzuriteService.Received(1).UpdateContainerAsync(
             "existing-container",
             Arg.Is<AzuriteContainerProperties>(p =>
-                p.Metadata.ContainsKey("key") &&
-                p.PublicAccessType == null &&
-                p.DefaultEncryptionScope == null &&
-                p.PreventEncryptionScopeOverride == null),
+                p.Metadata.ContainsKey("key")),
             Arg.Any<CancellationToken>());
     }
 
@@ -1360,8 +1421,9 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var updateDto = new UpdateContainerDTO
         {
+            ContainerName = "existing-container",
             Metadata = new Dictionary<string, string>()
         };
 
@@ -1372,7 +1434,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(updatedAzuriteContainer);
 
         // Act
-        var result = await repository.UpdateContainerAsync("existing-container", updateDto, CancellationToken.None);
+        var result = await repository.UpdateContainerAsync(updateDto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -1396,8 +1458,9 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new ContainerUpdateDTO
+        var updateDto = new UpdateContainerDTO
         {
+            ContainerName = "existing-container",
             Metadata = new Dictionary<string, string> { ["new"] = "value" }
         };
 
@@ -1405,7 +1468,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .ThrowsAsync(new AzuriteServiceException("Update failed"));
 
         // Act
-        var act = async () => await repository.UpdateContainerAsync("existing-container", updateDto, CancellationToken.None);
+        var act = async () => await repository.UpdateContainerAsync(updateDto, CancellationToken.None);
 
         // Assert
         await act.Should().ThrowAsync<AzuriteServiceException>();
@@ -1424,8 +1487,9 @@ public class StorageRepository_Tests : SqliteDbTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var updateDto = new ContainerUpdateDTO
+        var updateDto = new UpdateContainerDTO
         {
+            ContainerName = "test-container",
             Metadata = new Dictionary<string, string>()
         };
 
@@ -1433,7 +1497,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .ThrowsAsync(new OperationCanceledException());
 
         // Act
-        var act = async () => await repository.UpdateContainerAsync("test-container", updateDto, cts.Token);
+        var act = async () => await repository.UpdateContainerAsync(updateDto, cts.Token);
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
@@ -1481,6 +1545,79 @@ public class StorageRepository_Tests : SqliteDbTests
 
         // Assert
         act.Should().Throw<AzuriteServiceException>();
+    }
+
+    #endregion
+
+    #region ValidateContainerName Tests
+
+    [Fact(Timeout = 15000)]
+    public void ValidateContainerName_WithValidName_ShouldNotThrow()
+    {
+        // Arrange
+        var containerName = "valid-container-name";
+
+        // Act
+        var act = () => StorageRepository.ValidateContainerName(containerName);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateContainerName_WithNullName_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        string containerName = null!;
+
+        // Act
+        var act = () => StorageRepository.ValidateContainerName(containerName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateContainerName_WithEmptyString_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var containerName = "";
+
+        // Act
+        var act = () => StorageRepository.ValidateContainerName(containerName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateContainerName_WithWhitespaceOnly_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var containerName = "   ";
+
+        // Act
+        var act = () => StorageRepository.ValidateContainerName(containerName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateContainerName_WithTabsAndSpaces_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var containerName = "\t\n  \t";
+
+        // Act
+        var act = () => StorageRepository.ValidateContainerName(containerName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
     }
 
     #endregion

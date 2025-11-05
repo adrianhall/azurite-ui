@@ -2,6 +2,9 @@ using Microsoft.Net.Http.Headers;
 
 namespace AzuriteUI.Web.Extensions;
 
+/// <summary>
+/// Extension methods for system types.
+/// </summary>
 public static class SystemExtensions
 {
     /// <summary>

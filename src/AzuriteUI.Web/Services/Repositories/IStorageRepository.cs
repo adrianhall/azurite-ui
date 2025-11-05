@@ -51,11 +51,10 @@ public interface IStorageRepository
     /// <summary>
     /// Creates a new container in Azurite and updates the cache.
     /// </summary>
-    /// <param name="containerName">The name of the container to create.</param>
-    /// <param name="updateDto">The container properties to set.</param>
+    /// <param name="dto">The container properties to set.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The created container DTO.</returns>
-    Task<ContainerDTO> CreateContainerAsync(string containerName, ContainerUpdateDTO updateDto, CancellationToken cancellationToken = default);
+    Task<ContainerDTO> CreateContainerAsync(CreateContainerDTO dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a container from Azurite and removes it from the cache.
@@ -76,11 +75,10 @@ public interface IStorageRepository
     /// <summary>
     /// Updates an existing container in Azurite and updates the cache.
     /// </summary>
-    /// <param name="containerName">The name of the container to update.</param>
     /// <param name="updateDto">The container properties to update.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The updated container DTO.</returns>
-    Task<ContainerDTO> UpdateContainerAsync(string containerName, ContainerUpdateDTO updateDto, CancellationToken cancellationToken = default);
+    Task<ContainerDTO> UpdateContainerAsync(UpdateContainerDTO updateDto, CancellationToken cancellationToken = default);
     #endregion
 
     #region Upload and Download

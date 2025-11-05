@@ -62,6 +62,9 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
     /// <summary>
     /// Removes the specified container from the database.
     /// </summary>
+    /// <remarks>
+    /// The data is assured removed - if the data doesn't exist, it is silently ignored.
+    /// </remarks>
     /// <param name="containerName">The name of the container.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that resolves when the container is removed.</returns>

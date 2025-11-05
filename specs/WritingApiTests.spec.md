@@ -52,6 +52,17 @@ Add a 60 second timeout to each test that you write.  We will adjust timeouts as
 
 The `AzuriteExceptionFilter` is registered globally to handle exceptions from the AzuriteService layer and convert them into proper HTTP responses with ProblemDetails bodies. When writing API tests, include test cases for error conditions to verify the exception filter works correctly end-to-end.
 
+### Conditional Request Tests
+
+Each HTTP method is only expected to handle certain conditions for conditional requests:
+
+* GET of multiple items / list operations will not have conditional request support.
+* GET of a single item will support `If-None-Match: "etag"`.
+* DELETE of a single item will support `If-Match: "etag"`.
+* PUT of a single item will support `If-Match: "etag".
+
+Only test these conditions.  Do not test combinations of conditions or non-listed conditions.
+
 ### Error Scenarios to Test
 
 When writing API tests for endpoints that interact with Azurite, include tests for the following error scenarios:
