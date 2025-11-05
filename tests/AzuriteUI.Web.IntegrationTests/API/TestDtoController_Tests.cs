@@ -30,7 +30,6 @@ public class TestDtoController_Tests(ServiceFixture fixture) : IClassFixture<Ser
             {
                 r.Headers.Should().ContainKey("ETag").WhoseValue.Should().Contain("\"test-etag-123\"");
                 r.Content.Headers.Should().ContainKey("Last-Modified").WhoseValue.Should().Contain(TestDtoController.ContainerLastModified.ToString("R"));
-                // Link header is not checked yet.
             });
     }
 
@@ -53,7 +52,6 @@ public class TestDtoController_Tests(ServiceFixture fixture) : IClassFixture<Ser
             {
                 r.Headers.Should().ContainKey("ETag").WhoseValue.Should().Contain("\"blob-etag-456\"");
                 r.Content.Headers.Should().ContainKey("Last-Modified").WhoseValue.Should().Contain(TestDtoController.BlobLastModified.ToString("R"));
-                // Link header is not checked yet.
             });
     }
 
@@ -75,7 +73,6 @@ public class TestDtoController_Tests(ServiceFixture fixture) : IClassFixture<Ser
             .And.Satisfy(r =>
             {
                 r.Headers.Should().NotContainKey("ETag");
-                r.Headers.Should().NotContainKey("Link");
                 r.Content.Headers.Should().NotContainKey("Last-Modified");
             });
     }

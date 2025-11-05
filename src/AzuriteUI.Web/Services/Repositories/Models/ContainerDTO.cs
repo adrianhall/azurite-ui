@@ -89,5 +89,5 @@ public class ContainerDTO : IBaseDTO
     /// Gets the total size, in bytes, of all blobs in the container.
     /// </summary>
     [property: Description("The total size, in bytes, of all blobs in the container")]
-    public long TotalSize { get; set; } = 0L;    
+    public long TotalSize { get; set; } = 0L;  
 }

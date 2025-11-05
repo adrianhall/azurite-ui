@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using AzuriteUI.Web.IntegrationTests.Helpers;
 using AzuriteUI.Web.Services.CacheSync;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Http;
@@ -28,19 +27,29 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
         var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var endTime = DateTimeOffset.UtcNow;
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         result.Should().NotBeNull();
         result!.Name.Should().Be("test-container");
         result.ETag.Should().NotBeNullOrEmpty();
-        result.LastModified.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
+        result.LastModified.Should().BeCloseTo(endTime, TimeSpan.FromSeconds(5));
         result.BlobCount.Should().Be(0);
         result.PublicAccess.Should().Be("none");
 
         // Verify Location header
-        response.Headers.Location.Should().NotBeNull();
-        response.Headers.Location!.ToString().Should().Contain("/api/containers/test-container");
+        response.Headers.Location.Should().NotBeNull()
+            .And.BeOfType<Uri>()
+            .Which.AbsolutePath.Should().Be("/api/containers/test-container");
+
+        // Verify ETag header
+        var etagHeader = response.Headers.ETag?.ToString();
+        etagHeader.Should().NotBeNull().And.BeEquivalentTo($"\"{result.ETag}\"");
+
+        // Verify Last-Modified header
+        response.Content.Headers.LastModified.Should().NotBeNull()
+            .And.BeCloseTo(result.LastModified, TimeSpan.FromSeconds(1));
     }
 
     [Fact(Timeout = 60000)]
