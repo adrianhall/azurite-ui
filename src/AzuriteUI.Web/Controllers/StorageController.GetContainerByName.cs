@@ -15,7 +15,6 @@ public partial class StorageController : ODataController
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>The container properties if found; otherwise, a NotFound result.</returns>
     [HttpGet("{containerName}")]
-    [ActionName("GetContainerByName")]
     [EndpointName("GetContainerByName")]
     [EndpointDescription("Retrieves the properties of a specific container by its name.")]
     [ProducesResponseType<ContainerDTO>(StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
