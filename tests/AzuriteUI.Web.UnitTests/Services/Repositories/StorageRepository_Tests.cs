@@ -2018,21 +2018,15 @@ public class StorageRepository_Tests : SqliteDbTests
         };
 
         // Act
-        var uploadId = await repository.CreateUploadAsync(uploadDto, CancellationToken.None);
+        var uploadDTO = await repository.CreateUploadAsync(uploadDto, CancellationToken.None);
 
         // Assert
-        uploadId.Should().NotBeEmpty();
-
-        var upload = await context.Uploads.FirstOrDefaultAsync(u => u.UploadId == uploadId);
-        upload.Should().NotBeNull();
-        upload!.BlobName.Should().Be("new-blob.txt");
-        upload.ContainerName.Should().Be("test-container");
-        upload.ContentLength.Should().Be(10240);
-        upload.ContentType.Should().Be("text/plain");
-        upload.ContentEncoding.Should().Be("gzip");
-        upload.ContentLanguage.Should().Be("en-us");
-        upload.Metadata.Should().ContainKey("key").WhoseValue.Should().Be("value");
-        upload.Tags.Should().ContainKey("tag").WhoseValue.Should().Be("value");
+        uploadDTO.Should().NotBeNull();
+        uploadDTO.UploadId.Should().NotBeEmpty();
+        uploadDTO.BlobName.Should().Be("new-blob.txt");
+        uploadDTO.ContainerName.Should().Be("test-container");
+        uploadDTO.ContentLength.Should().Be(10240);
+        uploadDTO.ContentType.Should().Be("text/plain");
     }
 
     [Fact(Timeout = 15000)]

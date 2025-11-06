@@ -11,31 +11,15 @@ namespace AzuriteUI.Web.IntegrationTests.API;
 /// to simulate various exception scenarios.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class TestExceptionController_Tests : IAsyncLifetime
+public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest()
 {
-    private ServiceFixture? _fixture;
-
-    public async ValueTask InitializeAsync()
-    {
-        _fixture = new ServiceFixture();
-        await _fixture.InitializeAsync();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_fixture != null)
-        {
-            await _fixture.DisposeAsync();
-        }
-    }
-
     #region 404 Not Found Tests
 
     [Fact(Timeout = 60000)]
     public async Task TestException_404_Returns404WithProblemDetails()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/not-found");
@@ -44,7 +28,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -59,7 +43,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_404_IncludesResourceNameInExtensions()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/not-found");
@@ -67,7 +51,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         root.TryGetProperty("resourceName", out var resourceName).Should().BeTrue();
@@ -78,13 +62,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_404_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/not-found");
 
         // Assert
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         // Verify all required ProblemDetails fields are present
@@ -102,7 +86,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_409_Returns409WithProblemDetails()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/conflict");
@@ -111,7 +95,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -126,7 +110,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_409_IncludesResourceNameInExtensions()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/conflict");
@@ -134,7 +118,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         root.TryGetProperty("resourceName", out var resourceName).Should().BeTrue();
@@ -145,13 +129,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_409_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/conflict");
 
         // Assert
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         // Verify all required ProblemDetails fields are present
@@ -169,7 +153,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_416_Returns416WithProblemDetails()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/range-not-satisfiable");
@@ -178,7 +162,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.RequestedRangeNotSatisfiable);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -192,7 +176,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_416_DoesNotIncludeResourceName()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/range-not-satisfiable");
@@ -200,7 +184,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.RequestedRangeNotSatisfiable);
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         // RangeNotSatisfiableException doesn't have ResourceName property
@@ -211,13 +195,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_416_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/range-not-satisfiable");
 
         // Assert
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         // Verify all required ProblemDetails fields are present
@@ -235,7 +219,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_503_Returns503WithProblemDetails()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/service-unavailable");
@@ -244,7 +228,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -258,13 +242,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_503_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/service-unavailable");
 
         // Assert
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         // Verify all required ProblemDetails fields are present
@@ -282,7 +266,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_502_Returns502WithProblemDetails()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/bad-gateway");
@@ -291,7 +275,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.BadGateway);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -305,13 +289,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestException_502_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/bad-gateway");
 
         // Assert
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         // Verify all required ProblemDetails fields are present
@@ -334,7 +318,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestExceptions_AllEndpoints_ReturnCorrectStatusCodes(string endpoint, HttpStatusCode expectedStatus)
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
@@ -352,7 +336,7 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestExceptions_AllEndpoints_ReturnProblemDetailsContentType(string endpoint)
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
@@ -370,13 +354,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
     public async Task TestExceptions_AllEndpoints_ReturnValidJson(string endpoint)
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
 
         // Assert
-        var act = async () => await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var act = async () => await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         await act.Should().NotThrowAsync();
     }
 
@@ -392,13 +376,13 @@ public class TestExceptionController_Tests : IAsyncLifetime
         bool shouldExist)
     {
         // Arrange
-        var client = _fixture!.CreateClient();
+        var client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
 
         // Assert
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         var root = problemDetails!.RootElement;
 
         root.TryGetProperty(propertyName, out _).Should().Be(shouldExist);

@@ -526,3 +526,307 @@ Downloads the content of a blob. Supports HTTP Range requests for partial conten
 **Body**:
 
 The raw binary content of the blob (or the requested byte range).
+
+## Upload Endpoints
+
+The following endpoints handle chunked blob uploads, allowing uploads of files up to 10GB with progress tracking.
+
+### CreateUpload: `POST /api/containers/{containerName}/blobs`
+
+Initiates a new blob upload session for chunked uploads.
+
+#### CreateUpload Request
+
+**Path Elements**:
+
+* `{containerName}` - the name of the container where the blob will be uploaded.
+
+**Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "blobName": "name-of-blob",
+    "containerName": "name-of-container",
+    "contentLength": 1048576,
+    "contentType": "application/octet-stream",
+    "contentEncoding": "",
+    "contentLanguage": "",
+    "metadata": {
+        "key1": "value1",
+        "key2": "value2"
+    },
+    "tags": {
+        "key1": "value1",
+        "key2": "value2"
+    }
+}
+```
+
+This matches the `CreateUploadRequestDTO`. Note: `containerName` in body must match the route parameter.
+
+#### CreateUpload Response
+
+**Status Codes**:
+
+* 201 Created
+* 400 Bad Request
+* 404 Not Found (container not found)
+* 409 Conflict (blob already exists)
+
+**Headers**:
+
+* `Location: /api/uploads/{uploadId}`
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "uploadId": "00000000-0000-0000-0000-000000000000",
+    "containerName": "name-of-container",
+    "blobName": "name-of-blob",
+    "contentLength": 1048576,
+    "contentType": "application/octet-stream",
+    "uploadedBlocks": [],
+    "uploadedLength": 0,
+    "createdAt": "iso-8601 utc timestamp",
+    "lastActivityAt": "iso-8601 utc timestamp"
+}
+```
+
+This matches the `UploadStatusDTO`.
+
+### ListUploads: `GET /api/uploads`
+
+An OData v4 endpoint for listing all active upload sessions:
+
+#### ListUploads Request
+
+**Query Parameters**:
+
+* `$filter` - (optional) an OData v4 filter.
+* `$orderBy` - (optional, default: `lastActivityAt desc`) an OData v4 ordering.
+* `$select` - (optional) an OData v4 field selector.
+* `$skip` - (optional, default: 0) the number of records to skip.
+* `$top` - (optional, default: 25) the number of records to return.
+
+**Headers**:
+
+No additional request headers are supported.
+
+#### ListUploads Response
+
+**Status Codes**:
+
+* 200 OK
+* 400 Bad Request
+
+**Response Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "items": [
+        {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "name": "name-of-blob",
+            "containerName": "name-of-container",
+            "lastActivityAt": "iso-8601 utc timestamp",
+            "progress": 50.0
+        },
+        ...
+    ],
+    "filteredCount": 0,
+    "totalCount": 0,
+    "nextLink": "$skip=10&$top=10",
+    "prevLink": "$skip=0"
+}
+```
+
+This is the JSON equivalent of the `PagedResponse<UploadDTO>` model.
+
+### GetUploadStatus: `GET /api/uploads/{uploadId}`
+
+Retrieves the status of an upload session, including progress and uploaded blocks.
+
+#### GetUploadStatus Request
+
+**Path Elements**:
+
+* `{uploadId}` - the unique identifier (GUID) of the upload session.
+
+**Headers**:
+
+No additional request headers are supported.
+
+#### GetUploadStatus Response
+
+**Status Codes**:
+
+* 200 OK
+* 400 Bad Request
+* 404 Not Found
+
+**Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "uploadId": "00000000-0000-0000-0000-000000000000",
+    "containerName": "name-of-container",
+    "blobName": "name-of-blob",
+    "contentLength": 1048576,
+    "contentType": "application/octet-stream",
+    "uploadedBlocks": ["YmxvY2sxMDE=", "YmxvY2sxMDI="],
+    "uploadedLength": 524288,
+    "createdAt": "iso-8601 utc timestamp",
+    "lastActivityAt": "iso-8601 utc timestamp"
+}
+```
+
+This matches the `UploadStatusDTO`. The `uploadedBlocks` array contains Base64-encoded block IDs.
+
+### UploadBlock: `PUT /api/uploads/{uploadId}/blocks/{blockId}`
+
+Uploads a block (chunk) of data for an upload session. The block data is streamed directly to Azure Storage without buffering in memory.
+
+#### UploadBlock Request
+
+**Path Elements**:
+
+* `{uploadId}` - the unique identifier (GUID) of the upload session.
+* `{blockId}` - the Base64-encoded block identifier (must be unique within the blob and max 64 bytes when decoded).
+
+**Headers**:
+
+* `Content-Type: application/octet-stream`
+* `Content-Length: <size-in-bytes>` (required)
+* `Content-MD5: <base64-md5-hash>` (optional)
+
+**Body**:
+
+The raw binary content of the block (up to 10GB).
+
+#### UploadBlock Response
+
+**Status Codes**:
+
+* 200 OK
+* 400 Bad Request (invalid block ID or validation failure)
+* 404 Not Found (upload session not found)
+
+**Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "uploadId": "00000000-0000-0000-0000-000000000000",
+    "blockId": "YmxvY2sxMDE=",
+    "message": "Block uploaded successfully"
+}
+```
+
+### CommitUpload: `PUT /api/uploads/{uploadId}/commit`
+
+Commits an upload session by finalizing the blob with the specified block list. This operation will create the blob in Azure Storage and remove the upload session.
+
+#### CommitUpload Request
+
+**Path Elements**:
+
+* `{uploadId}` - the unique identifier (GUID) of the upload session.
+
+**Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "blockIds": ["YmxvY2sxMDE=", "YmxvY2sxMDI=", "YmxvY2sxMDM="]
+}
+```
+
+This matches the `CommitUploadRequestDTO`. The blocks are committed in the order specified.
+
+#### CommitUpload Response
+
+**Status Codes**:
+
+* 200 OK
+* 400 Bad Request (missing blocks or validation failure)
+* 404 Not Found (upload session not found)
+
+**Headers**:
+
+* `Location: /api/containers/{containerName}/blobs/{blobName}`
+* `ETag: "quoted-etag"`
+* `Last-Modified: <rfc-1123 date/time stamp>`
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "name": "name-of-blob",
+    "etag": "unquoted-etag",
+    "lastModified": "iso-8601 utc timestamp",
+    "blobType": "block",
+    "containerName": "name-of-container",
+    "contentEncoding": "",
+    "contentLanguage": "",
+    "contentLength": 1048576,
+    "contentType": "application/octet-stream",
+    "createdOn": "iso-8601 utc timestamp",
+    "expiresOn": "iso-8601 utc timestamp",
+    "hasLegalHold": false,
+    "lastAccessedOn": "iso-8601 utc timestamp",
+    "metadata": {
+        "key1": "value1",
+        "key2": "value2"
+    },
+    "tags": {
+        "key1": "value1",
+        "key2": "value2"
+    },
+    "remainingRetentionDays": 0
+}
+```
+
+This matches the `BlobDTO`.
+
+### CancelUpload: `DELETE /api/uploads/{uploadId}`
+
+Cancels an upload session and removes it from the cache. Staged blocks in Azure Storage will automatically expire.
+
+#### CancelUpload Request
+
+**Path Elements**:
+
+* `{uploadId}` - the unique identifier (GUID) of the upload session to cancel.
+
+**Headers**:
+
+No additional request headers are supported.
+
+#### CancelUpload Response
+
+**Status Codes**:
+
+* 204 No Content
+* 400 Bad Request
+* 404 Not Found

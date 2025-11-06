@@ -1,9 +1,3 @@
-using AzuriteUI.Web.IntegrationTests.Helpers;
-using AzuriteUI.Web.Services.Repositories.Models;
-using Microsoft.AspNetCore.Http;
-using System.Net;
-using System.Net.Http.Json;
-
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 /// <summary>
@@ -11,7 +5,7 @@ namespace AzuriteUI.Web.IntegrationTests.API;
 /// to verify automatic header generation for DTO responses.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class TestDtoController_Tests(ServiceFixture fixture) : IClassFixture<ServiceFixture>
+public class TestDtoController_Tests(ServiceFixture fixture) : BaseApiTest()
 {
     #region Single ContainerDTO Tests
 

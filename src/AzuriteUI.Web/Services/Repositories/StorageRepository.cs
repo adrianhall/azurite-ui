@@ -370,7 +370,7 @@ public class StorageRepository(
     /// <param name="uploadDto">The upload request details.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The created upload session details.</returns>
-    public async Task<Guid> CreateUploadAsync(CreateUploadRequestDTO uploadDto, CancellationToken cancellationToken = default)
+    public async Task<UploadStatusDTO> CreateUploadAsync(CreateUploadRequestDTO uploadDto, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("CreateUploadAsync({uploadDto}) called", JsonSerializer.Serialize(uploadDto));
 
@@ -404,7 +404,7 @@ public class StorageRepository(
         context.Uploads.Add(uploadModel);
         await context.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Created upload session '{uploadId}' for blob '{blobName}' in container '{containerName}'", uploadModel.UploadId, uploadDto.BlobName, uploadDto.ContainerName);
-        return uploadModel.UploadId;
+        return await GetUploadStatusAsync(uploadModel.UploadId, cancellationToken);
     }
 
     /// <summary>

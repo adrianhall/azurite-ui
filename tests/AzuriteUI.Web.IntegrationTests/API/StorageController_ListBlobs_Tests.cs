@@ -2,14 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AzuriteUI.Web.Controllers.Models;
-using AzuriteUI.Web.IntegrationTests.Helpers;
-using AzuriteUI.Web.Services.CacheSync;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassFixture<ServiceFixture>
+public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApiTest()
 {
     #region Basic GET Tests
 
@@ -19,12 +16,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -45,12 +42,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -69,12 +66,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("empty-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -89,12 +86,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
     {
         // Arrange
         await fixture.Azurite.CleanupAsync();
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers/non-existent-container/blobs");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -118,12 +115,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         {
             await fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
         }
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$top=5");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -145,12 +142,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         {
             await fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
         }
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$skip=3&$top=4");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -170,12 +167,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$skip=10");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -197,12 +194,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         {
             await fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
         }
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$skip=8&$top=5");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -225,12 +222,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "test-file.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "prod-file.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "test-data.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=startswith(name,'test')");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -250,12 +247,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "file1.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "file2.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "file3.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=contentType eq 'text/plain'");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -274,12 +271,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "test-small.txt", "hi");
         await fixture.Azurite.CreateBlobAsync(containerName, "test-large.txt", "this is a longer content string");
         await fixture.Azurite.CreateBlobAsync(containerName, "prod-small.txt", "hi");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=startswith(name,'test') and contentLength gt 5");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -301,12 +298,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=name");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -327,12 +324,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=name desc");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -353,12 +350,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "small.txt", "hi");
         await fixture.Azurite.CreateBlobAsync(containerName, "large.txt", "this is a much longer content string");
         await fixture.Azurite.CreateBlobAsync(containerName, "medium.txt", "medium content");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=contentLength desc");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -380,12 +377,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "content");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$select=name");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -405,12 +402,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "content");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$select=name,contentLength");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -485,12 +482,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "test-beta.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "test-gamma.txt", "content3");
         await fixture.Azurite.CreateBlobAsync(containerName, "prod-alpha.txt", "content4");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=startswith(name,'test')&$orderby=name&$skip=1&$top=1");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -512,12 +509,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         await fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$select=name&$orderby=name desc&$top=2");
-        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<JsonElement>>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -527,20 +524,6 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : IClassF
         names[0].Should().Be("zebra.txt");
         names[1].Should().Be("beta.txt");
         result.Items.First().TryGetProperty("eTag", out _).Should().BeFalse();
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Synchronizes the cache database with Azurite.
-    /// </summary>
-    private async Task SynchronizeCacheAsync()
-    {
-        using var scope = fixture.Services.CreateScope();
-        var syncService = scope.ServiceProvider.GetRequiredService<ICacheSyncService>();
-        await syncService.SynchronizeCacheAsync(CancellationToken.None);
     }
 
     #endregion

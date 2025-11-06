@@ -1,6 +1,10 @@
+using AzuriteUI.Web.Services.CacheDb;
 using AzuriteUI.Web.Services.CacheSync;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AzuriteUI.Web.IntegrationTests.Helpers;
 
@@ -48,6 +52,19 @@ public class ServiceFixture : IAsyncLifetime
     /// </summary>
     public IServiceProvider Services { get => Factory.Services; }
 
+    /// <summary>
+    /// JSON serializer options that match the API configuration.
+    /// Use these options when deserializing API responses in tests.
+    /// </summary>
+    public static JsonSerializerOptions JsonOptions { get; } = new()
+    {
+        AllowTrailingCommas = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     #region IAsyncLifetime Implementation
     /// <summary>
     /// Part of the <see cref="IAsyncLifetime"/>, this initializes the Azurite container.
@@ -84,6 +101,20 @@ public class ServiceFixture : IAsyncLifetime
     #endregion
 
     /// <summary>
+    /// Cleans up Azurite and the cache database.
+    /// </summary>
+    public async Task CleanupAsync()
+    {
+        await Azurite.CleanupAsync();
+
+        // Delete all containers (cascades to blobs)
+        using var scope = Factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM Containers");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM Uploads");
+    }
+
+    /// <summary>
     /// Creates a new <see cref="HttpClient"/> for making requests to the service.
     /// </summary>
     public HttpClient CreateClient()
@@ -104,6 +135,16 @@ public class ServiceFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var queueWorker = scope.ServiceProvider.GetRequiredService<IQueueManager>();
         await queueWorker.StartQueueAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Synchronizes the cache database with Azurite.
+    /// </summary>
+    public async Task SynchronizeCacheAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var syncService = scope.ServiceProvider.GetRequiredService<ICacheSyncService>();
+        await syncService.SynchronizeCacheAsync(CancellationToken.None);
     }
 
     /// <summary>

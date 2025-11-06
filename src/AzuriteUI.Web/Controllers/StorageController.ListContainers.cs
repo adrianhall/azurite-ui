@@ -1,4 +1,5 @@
 using AzuriteUI.Web.Controllers.Models;
+using AzuriteUI.Web.Extensions;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;

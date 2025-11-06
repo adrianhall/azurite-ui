@@ -1,17 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
-using AzuriteUI.Web.IntegrationTests.Helpers;
-using AzuriteUI.Web.Services.CacheSync;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : IClassFixture<ServiceFixture>
+public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : BaseApiTest()
 {
     #region Basic DELETE Tests
 
@@ -21,7 +17,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -42,7 +38,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
         await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
         await fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -52,7 +48,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Verify container and blobs are deleted
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         var getResponse = await client.GetAsync($"/api/containers/{containerName}");
         getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -63,7 +59,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("empty-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -79,7 +75,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act - Delete the first time
@@ -102,7 +98,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
     {
         // Arrange
         await fixture.Azurite.CleanupAsync();
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist";
 
@@ -118,7 +114,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
     {
         // Arrange
         await fixture.Azurite.CleanupAsync();
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act - Use a clearly invalid container name
@@ -138,12 +134,12 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Get the container first to obtain its ETag
         var getResponse = await client.GetAsync($"/api/containers/{containerName}");
-        var container = await getResponse.Content.ReadFromJsonAsync<ContainerDTO>();
+        var container = await getResponse.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
         var etag = EnsureQuotedETag(container!.ETag);
 
         // Act
@@ -161,7 +157,7 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -176,38 +172,6 @@ public class StorageController_DeleteContainer_Tests(ServiceFixture fixture) : I
         // Verify container was NOT deleted
         var verifyResponse = await client.GetAsync($"/api/containers/{containerName}");
         verifyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Synchronizes the cache database with Azurite.
-    /// </summary>
-    private async Task SynchronizeCacheAsync()
-    {
-        using var scope = fixture.Services.CreateScope();
-        var syncService = scope.ServiceProvider.GetRequiredService<ICacheSyncService>();
-        await syncService.SynchronizeCacheAsync(CancellationToken.None);
-    }
-
-    /// <summary>
-    /// Ensures the ETag is properly quoted for use in HTTP headers.
-    /// </summary>
-    /// <param name="etag">The ETag value, which may or may not be quoted.</param>
-    /// <returns>A properly quoted ETag value.</returns>
-    private static string EnsureQuotedETag(string etag)
-    {
-        if (string.IsNullOrEmpty(etag))
-            return etag;
-
-        // If it's already quoted, return as-is
-        if (etag.StartsWith("\"") && etag.EndsWith("\""))
-            return etag;
-
-        // Otherwise, add quotes
-        return $"\"{etag}\"";
     }
 
     #endregion

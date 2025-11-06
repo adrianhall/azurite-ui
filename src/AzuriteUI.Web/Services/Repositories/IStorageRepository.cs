@@ -123,7 +123,7 @@ public interface IStorageRepository
     /// <param name="uploadDto">The upload request details.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The created upload session details.</returns>
-    Task<Guid> CreateUploadAsync(CreateUploadRequestDTO uploadDto, CancellationToken cancellationToken = default);
+    Task<UploadStatusDTO> CreateUploadAsync(CreateUploadRequestDTO uploadDto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the status of an upload session.

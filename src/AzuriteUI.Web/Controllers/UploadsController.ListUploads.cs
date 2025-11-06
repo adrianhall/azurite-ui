@@ -12,40 +12,39 @@ using System.Net.Mime;
 
 namespace AzuriteUI.Web.Controllers;
 
-public partial class StorageController : ODataController
+public partial class UploadsController : ODataController
 {
     /// <summary>
     /// <para>
-    /// The GET method is used to retrieve resource representation.  The resource is never modified.
-    /// In this case, an OData v4 query is accepted with the following options:
+    /// Lists all active upload sessions with OData v4 query support.
+    /// The GET method is used to retrieve resource representation. The resource is never modified.
+    /// Supports the following OData query options:
     /// </para>
     /// <para>
     /// - <c>$count</c> is used to return a count of entities within the search parameters within the <see cref="PagedResponse{T}"/> response.
     /// - <c>$filter</c> is used to restrict the entities to be sent.
     /// - <c>$orderby</c> is used for ordering the entities to be sent.
     /// - <c>$select</c> is used to select which properties of the entities are sent.
-    /// - <c>$skip</c> is used to skip some entities
+    /// - <c>$skip</c> is used to skip some entities.
     /// - <c>$top</c> is used to limit the number of entities returned.
     /// </para>
     /// </summary>
     /// <remarks>
     /// We include the query parameters to drive the OpenAPI documentation, but they are not actually used in the code.
     /// </remarks>
-    /// <param name="containerName">The name of the container to list blobs from.</param>
     /// <param name="count">The OData <c>$count</c> query option.</param>
     /// <param name="filter">The OData <c>$filter</c> query option.</param>
     /// <param name="orderby">The OData <c>$orderby</c> query option.</param>
     /// <param name="select">The OData <c>$select</c> query option.</param>
     /// <param name="skip">The OData <c>$skip</c> query option.</param>
     /// <param name="top">The OData <c>$top</c> query option.</param>
-    /// <param name="cancellationToken">A cancellation token</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>An <see cref="OkObjectResult"/> response object with the paged response.</returns>
-    [HttpGet("{containerName}/blobs")]
-    [EndpointName("ListBlobs")]
-    [EndpointDescription("Lists all blobs within a container, with OData v4 query support.")]
-    [ProducesResponseType<PagedResponse<BlobDTO>>(StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
-    public virtual async Task<IActionResult> ListBlobsAsync(
-        [FromRoute] string containerName,
+    [HttpGet]
+    [EndpointName("ListUploads")]
+    [EndpointDescription("Lists all active upload sessions, with OData v4 query support.")]
+    [ProducesResponseType<PagedResponse<UploadDTO>>(StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
+    public virtual async Task<IActionResult> ListUploadsAsync(
         [FromQuery(Name = "$count")] bool? count = null,
         [FromQuery(Name = "$filter")] string? filter = null,
         [FromQuery(Name = "$orderby")] string? orderby = null,
@@ -54,13 +53,13 @@ public partial class StorageController : ODataController
         [FromQuery(Name = "$top")] int? top = null,
         CancellationToken cancellationToken = default)
     {
-        Logger.LogInformation("ListBlobsAsync(query: {QueryString})", Request.QueryString.Value);
+        Logger.LogInformation("ListUploadsAsync(query: {QueryString})", Request.QueryString.Value);
 
-        BuildServiceProvider(Request);
+        StorageController.BuildServiceProvider(Request);
         ODataValidationSettings validationSettings = new() { MaxTop = ODataMaxTop };
         ODataQuerySettings querySettings = new() { PageSize = ODataPageSize, EnsureStableOrdering = true };
-        ODataQueryContext queryContext = new(EdmModel, typeof(BlobDTO), new ODataPath());
-        ODataQueryOptions<BlobDTO> queryOptions = new(queryContext, Request);
+        ODataQueryContext queryContext = new(EdmModel, typeof(UploadDTO), new ODataPath());
+        ODataQueryOptions<UploadDTO> queryOptions = new(queryContext, Request);
 
         try
         {
@@ -72,24 +71,30 @@ public partial class StorageController : ODataController
             return BadRequest(validationException.Message);
         }
 
-
         // Determine the dataset to be queried.
-        IQueryable<BlobDTO> dataset = Repository.Blobs.Where(x => x.ContainerName == containerName).AsQueryable();
+        IQueryable<UploadDTO> dataset = Repository.Uploads.AsQueryable();
         int totalCount = await dataset.CountAsync(cancellationToken).ConfigureAwait(false);
 
         // Apply the filter to the dataset.
-        IQueryable<BlobDTO> filteredDataset = dataset.ApplyODataFilter(queryOptions.Filter, querySettings);
+        IQueryable<UploadDTO> filteredDataset = dataset.ApplyODataFilter(queryOptions.Filter, querySettings);
         int filteredCount = await filteredDataset.CountAsync(cancellationToken).ConfigureAwait(false);
 
         // Now apply orderby, skip, and top options to the dataset
-        IQueryable<BlobDTO> orderedDataset = filteredDataset
-            .ApplyODataOrderBy(queryOptions.OrderBy, querySettings)
+        IQueryable<UploadDTO> orderedDataset = filteredDataset
+            .ApplyUploadOrderBy(queryOptions.OrderBy, querySettings)
             .ApplyODataPaging(queryOptions, querySettings);
 
         // Create the paged response.
         var resultSet = await orderedDataset.ToListAsync(cancellationToken).ConfigureAwait(false);
-        PagedResponse<object> response = CreatePagedResponse(queryOptions, resultSet.ApplyODataSelect(queryOptions.SelectExpand, querySettings), totalCount, filteredCount);
-        Logger.LogInformation("ListBlobsAsync() returning {Count} items (Total: {Total}, Filtered: {Filtered})", resultSet.Count, totalCount, filteredCount);
+        PagedResponse<object> response = StorageController.CreatePagedResponse(
+            queryOptions,
+            resultSet.ApplyODataSelect(queryOptions.SelectExpand, querySettings),
+            totalCount,
+            filteredCount);
+
+        Logger.LogInformation("ListUploadsAsync() returning {Count} items (Total: {Total}, Filtered: {Filtered})",
+            resultSet.Count, totalCount, filteredCount);
+
         return Ok(response);
-    }        
+    }
 }

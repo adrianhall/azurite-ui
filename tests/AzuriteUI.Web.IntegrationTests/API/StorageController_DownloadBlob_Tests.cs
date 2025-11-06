@@ -1,15 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using AzuriteUI.Web.Services.CacheSync;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : IClassFixture<ServiceFixture>
+public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : BaseApiTest()
 {
     #region Basic Download Tests
 
@@ -21,7 +19,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "This is test content for the blob.";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -51,7 +49,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -72,7 +70,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -91,7 +89,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -115,7 +113,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789ABCDEFGHIJ";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -140,7 +138,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789ABCDEFGHIJ";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -164,7 +162,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789ABCDEFGHIJ";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -191,7 +189,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act
@@ -211,7 +209,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         // Arrange
         await fixture.Azurite.CleanupAsync();
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
         var nonExistentBlob = "blob-that-does-not-exist-12345.txt";
 
@@ -223,7 +221,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         mediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -237,7 +235,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
     {
         // Arrange
         await fixture.Azurite.CleanupAsync();
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist-12345";
 
@@ -249,7 +247,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         mediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -265,7 +263,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789";
         var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
         using HttpClient client = fixture.CreateClient();
 
         // Act - Request range beyond the blob size
@@ -278,26 +276,12 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : ICla
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         mediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
         root.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status416RangeNotSatisfiable);
         root.GetProperty("title").GetString().Should().Be("Range Not Satisfiable");
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Synchronizes the cache database with Azurite.
-    /// </summary>
-    private async Task SynchronizeCacheAsync()
-    {
-        using var scope = fixture.Services.CreateScope();
-        var syncService = scope.ServiceProvider.GetRequiredService<ICacheSyncService>();
-        await syncService.SynchronizeCacheAsync(CancellationToken.None);
     }
 
     #endregion

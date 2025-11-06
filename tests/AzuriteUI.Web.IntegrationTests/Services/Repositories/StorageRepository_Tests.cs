@@ -572,13 +572,19 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         };
 
         // Act
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
 
         // Assert
-        uploadId.Should().NotBeEmpty();
+        result.Should().NotBeNull();
+        result.UploadId.Should().NotBeEmpty();
+        result.ContainerName.Should().Be(containerName);
+        result.BlobName.Should().Be(blobName);
+        result.ContentLength.Should().Be(1024);
+        result.UploadedLength.Should().Be(0);
+        result.UploadedBlocks.Should().BeEmpty();
 
         // Verify in database
-        var upload = await _context.Uploads.FirstOrDefaultAsync(u => u.UploadId == uploadId);
+        var upload = await _context.Uploads.FirstOrDefaultAsync(u => u.UploadId == result.UploadId);
         upload.Should().NotBeNull();
         upload!.BlobName.Should().Be(blobName);
         upload.ContainerName.Should().Be(containerName);
@@ -647,7 +653,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             BlobName = blobName,
             ContentLength = 100
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = result.UploadId;
 
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block-1"));
         var content = new MemoryStream(Encoding.UTF8.GetBytes("Block content"));
@@ -691,7 +698,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             BlobName = blobName,
             ContentLength = 100
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = result.UploadId;
 
         var invalidBlockId = "not-base64!@#";
         var content = new MemoryStream(Encoding.UTF8.GetBytes("Block content"));
@@ -720,7 +728,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             ContentLength = 200,
             ContentType = "text/plain"
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = result.UploadId;
 
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block-1"));
         var content = new MemoryStream(Encoding.UTF8.GetBytes("Block content"));
@@ -770,7 +779,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             ContentType = "text/plain",
             Metadata = new Dictionary<string, string> { ["test"] = "commit" }
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var createResult = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = createResult.UploadId;
 
         var blockId1 = Convert.ToBase64String(Encoding.UTF8.GetBytes("block-1"));
         var content1 = new MemoryStream(Encoding.UTF8.GetBytes("First "));
@@ -822,7 +832,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             BlobName = blobName,
             ContentLength = 100
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = result.UploadId;
 
         var blockId1 = Convert.ToBase64String(Encoding.UTF8.GetBytes("block-1"));
         var content1 = new MemoryStream(Encoding.UTF8.GetBytes("First"));
@@ -867,7 +878,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             BlobName = blobName,
             ContentLength = 100
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = result.UploadId;
 
         // Act
         await _repository.CancelUploadAsync(uploadId);
@@ -906,7 +918,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             BlobName = blobName,
             ContentLength = 1000
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var result = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = result.UploadId;
 
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block-1"));
         var content = new MemoryStream(Encoding.UTF8.GetBytes("Block content"));
@@ -1045,7 +1058,8 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
             BlobName = blobName,
             ContentLength = 50
         };
-        var uploadId = await _repository.CreateUploadAsync(uploadDto);
+        var createResult = await _repository.CreateUploadAsync(uploadDto);
+        var uploadId = createResult.UploadId;
 
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block-1"));
         var content = new MemoryStream(Encoding.UTF8.GetBytes("Test content"));

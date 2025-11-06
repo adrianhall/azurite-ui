@@ -1,15 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using AzuriteUI.Web.Services.CacheSync;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : IClassFixture<ServiceFixture>
+public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : BaseApiTest()
 {
     #region Basic POST Tests
 
@@ -26,7 +24,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
 
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
-        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
         var endTime = DateTimeOffset.UtcNow;
 
         // Assert
@@ -71,7 +69,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
 
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
-        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -96,7 +94,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
 
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
-        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -118,7 +116,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
 
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
-        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -149,7 +147,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
-        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        var problemDetails = await response.Content.ReadFromJsonAsync<JsonDocument>(ServiceFixture.JsonOptions);
         problemDetails.Should().NotBeNull();
 
         var root = problemDetails!.RootElement;
@@ -264,7 +262,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
 
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
-        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -285,7 +283,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
 
         // Act
         var response = await client.PostAsJsonAsync("/api/containers", dto);
-        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await response.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -317,31 +315,17 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : I
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
         // Synchronize cache
-        await SynchronizeCacheAsync();
+        await fixture.SynchronizeCacheAsync();
 
         // Act - Get the container
         var getResponse = await client.GetAsync("/api/containers/new-container");
-        var result = await getResponse.Content.ReadFromJsonAsync<ContainerDTO>();
+        var result = await getResponse.Content.ReadFromJsonAsync<ContainerDTO>(ServiceFixture.JsonOptions);
 
         // Assert
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         result.Should().NotBeNull();
         result!.Name.Should().Be("new-container");
         result.Metadata.Should().ContainKey("test").WhoseValue.Should().Be("value");
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Synchronizes the cache database with Azurite.
-    /// </summary>
-    private async Task SynchronizeCacheAsync()
-    {
-        using var scope = fixture.Services.CreateScope();
-        var syncService = scope.ServiceProvider.GetRequiredService<ICacheSyncService>();
-        await syncService.SynchronizeCacheAsync(CancellationToken.None);
     }
 
     #endregion

@@ -2,6 +2,8 @@ using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Query.Wrapper;
 
+namespace AzuriteUI.Web.Extensions;
+
 /// <summary>
 /// A set of extension methods that makes working with OData easier.
 /// </summary>
@@ -19,7 +21,7 @@ public static class ODataExtensions
         => (IQueryable<T>)(filterQueryOption?.ApplyTo(query, settings) ?? query);
 
     /// <summary>
-    /// Applies the <c>$orderBy</c> OData query option to the provided query for blobs.
+    /// Applies the <c>$orderBy</c> OData query option to the provided query for blobs or containers.
     /// </summary>
     /// <typeparam name="T">The type of entity being queried.</typeparam>
     /// <param name="query">The current <see cref="IQueryable{T}"/> representing the query.</param>
@@ -27,6 +29,16 @@ public static class ODataExtensions
     /// <param name="settings">The query settings being used.</param>
     /// <returns>A modified <see cref="IQueryable{T}"/> representing the ordered data.</returns>
     internal static IQueryable<T> ApplyODataOrderBy<T>(this IQueryable<T> query, OrderByQueryOption? orderingQueryOption, ODataQuerySettings settings) where T : IBaseDTO
+        => orderingQueryOption?.ApplyTo(query, settings).ThenBy(e => e.Name) ?? query.OrderBy(e => e.Name);
+
+    /// <summary>
+    /// Applies the <c>$orderBy</c> OData query option to the provided query for uploads.
+    /// </summary>
+    /// <param name="query">The current <see cref="IQueryable{T}"/> representing the query.</param>
+    /// <param name="orderingQueryOption">The ordering query option to apply.</param>
+    /// <param name="settings">The query settings being used.</param>
+    /// <returns>A modified <see cref="IQueryable{T}"/> representing the ordered data.</returns>
+    internal static IQueryable<UploadDTO> ApplyUploadOrderBy(this IQueryable<UploadDTO> query, OrderByQueryOption? orderingQueryOption, ODataQuerySettings settings)
         => orderingQueryOption?.ApplyTo(query, settings).ThenBy(e => e.Name) ?? query.OrderBy(e => e.Name);
 
     /// <summary>
