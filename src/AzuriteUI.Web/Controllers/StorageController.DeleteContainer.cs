@@ -2,8 +2,6 @@ using AzuriteUI.Web.Services.Azurite.Exceptions;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using System.Net.Mime;
-using System.Text.Json;
 
 namespace AzuriteUI.Web.Controllers;
 

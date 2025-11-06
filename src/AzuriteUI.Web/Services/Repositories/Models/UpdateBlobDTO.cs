@@ -5,19 +5,19 @@ namespace AzuriteUI.Web.Services.Repositories.Models;
 /// <summary>
 /// A data transfer object representing an update operation on a blob in Azurite.
 /// </summary>
-public class BlobUpdateDTO
+public class UpdateBlobDTO
 {
     /// <summary>
-    /// The content encoding of the blob.
+    /// The name of the container containing the blob.
     /// </summary>
-    [property: Description("The content encoding of the blob")]
-    public string ContentEncoding { get; set; } = string.Empty;
+    [property: Description("The name of the container containing the blob")]
+    public string ContainerName { get; set; } = string.Empty;
 
     /// <summary>
-    /// The content language of the blob.
+    /// The name of the blob.
     /// </summary>
-    [property: Description("The content language of the blob")]
-    public string ContentLanguage { get; set; } = string.Empty;
+    [property: Description("The name of the blob")]
+    public string BlobName { get; set; } = string.Empty;
 
     /// <summary>
     /// The metadata for the blob.

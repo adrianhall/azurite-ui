@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Extensions;
 using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
@@ -26,11 +27,7 @@ public partial class StorageController : ODataController
     {
         Logger.LogInformation("UpdateContainerAsync('{containerName}', '{containerProps}') called", containerName, JsonSerializer.Serialize(dto));
 
-        if (string.IsNullOrWhiteSpace(dto.ContainerName))
-        {
-            dto.ContainerName = containerName;
-        }
-
+        dto.ContainerName = dto.ContainerName.OrDefault(containerName);
         if (dto.ContainerName != containerName)
         {
             Logger.LogWarning("UpdateContainerAsync: Mismatch between route containerName '{RouteContainerName}' and body containerName '{BodyContainerName}'", containerName, dto.ContainerName);

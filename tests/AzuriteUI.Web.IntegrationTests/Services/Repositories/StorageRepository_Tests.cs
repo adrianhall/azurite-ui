@@ -439,14 +439,16 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
 
-        var updateDto = new BlobUpdateDTO
+        var updateDto = new UpdateBlobDTO
         {
+            ContainerName = containerName,
+            BlobName = blobName,
             Metadata = new Dictionary<string, string> { ["updated"] = "true" },
             Tags = new Dictionary<string, string> { ["environment"] = "test" }
         };
 
         // Act
-        var result = await _repository.UpdateBlobAsync(containerName, blobName, updateDto);
+        var result = await _repository.UpdateBlobAsync(updateDto);
 
         // Assert
         result.Should().NotBeNull();
@@ -466,10 +468,14 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         var containerName = $"test-container-{Guid.NewGuid():N}";
         var blobName = $"test-blob-{Guid.NewGuid():N}.txt";
         await _repository.CreateContainerAsync(new CreateContainerDTO { ContainerName = containerName });
-        var updateDto = new BlobUpdateDTO();
+        var updateDto = new UpdateBlobDTO
+        {
+            ContainerName = containerName,
+            BlobName = blobName
+        };
 
         // Act
-        Func<Task> act = async () => await _repository.UpdateBlobAsync(containerName, blobName, updateDto);
+        Func<Task> act = async () => await _repository.UpdateBlobAsync(updateDto);
 
         // Assert
         await act.Should().ThrowAsync<ResourceNotFoundException>();
@@ -974,13 +980,15 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, blobName);
         await _context.UpsertBlobAsync(azuriteBlob, containerName);
 
-        var updateDto = new BlobUpdateDTO
+        var updateDto = new UpdateBlobDTO
         {
+            ContainerName = containerName,
+            BlobName = blobName,
             Metadata = new Dictionary<string, string> { ["version"] = "2" }
         };
 
         // Act
-        var result = await _repository.UpdateBlobAsync(containerName, blobName, updateDto);
+        var result = await _repository.UpdateBlobAsync(updateDto);
 
         // Assert
         // Verify Azurite has updated metadata

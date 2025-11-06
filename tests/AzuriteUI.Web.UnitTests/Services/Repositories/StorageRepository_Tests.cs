@@ -334,6 +334,91 @@ public class StorageRepository_Tests : SqliteDbTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    [Fact(Timeout = 15000)]
+    public async Task DeleteBlobAsync_WhenAzuriteReturns404_ShouldRemoveFromCacheAndNotThrow()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "cont-etag",
+            LastModified = DateTimeOffset.UtcNow
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var blob = new BlobModel
+        {
+            Name = "cached-but-not-in-azurite.txt",
+            ContainerName = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "blob-etag",
+            LastModified = DateTimeOffset.UtcNow
+        };
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        _mockAzuriteService.DeleteBlobAsync("test-container", "cached-but-not-in-azurite.txt", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AzuriteServiceException("Blob not found") { StatusCode = StatusCodes.Status404NotFound });
+
+        // Act
+        await repository.DeleteBlobAsync("test-container", "cached-but-not-in-azurite.txt", CancellationToken.None);
+
+        // Assert
+        var cached = await context.Blobs.FirstOrDefaultAsync(b => b.ContainerName == "test-container" && b.Name == "cached-but-not-in-azurite.txt");
+        cached.Should().BeNull();
+
+        await _mockAzuriteService.Received(1).DeleteBlobAsync("test-container", "cached-but-not-in-azurite.txt", Arg.Any<CancellationToken>());
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DeleteBlobAsync_WhenAzuriteReturns400_ShouldThrowAndNotRemoveFromCache()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var container = new ContainerModel
+        {
+            Name = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "cont-etag",
+            LastModified = DateTimeOffset.UtcNow
+        };
+        context.Containers.Add(container);
+        await context.SaveChangesAsync();
+
+        var blob = new BlobModel
+        {
+            Name = "blob-with-error.txt",
+            ContainerName = "test-container",
+            CachedCopyId = Guid.NewGuid().ToString("N"),
+            ETag = "blob-etag",
+            LastModified = DateTimeOffset.UtcNow
+        };
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        _mockAzuriteService.DeleteBlobAsync("test-container", "blob-with-error.txt", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AzuriteServiceException("Bad Request") { StatusCode = StatusCodes.Status400BadRequest });
+
+        // Act
+        var act = async () => await repository.DeleteBlobAsync("test-container", "blob-with-error.txt", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<AzuriteServiceException>()
+            .Where(ex => ex.StatusCode == StatusCodes.Status400BadRequest);
+
+        // Verify blob still exists in cache
+        var cached = await context.Blobs.FirstOrDefaultAsync(b => b.ContainerName == "test-container" && b.Name == "blob-with-error.txt");
+        cached.Should().NotBeNull();
+        cached!.ETag.Should().Be("blob-etag");
+    }
+
     #endregion
 
     #region GetBlobAsync Tests
@@ -563,17 +648,15 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new BlobUpdateDTO
+        var updateDto = new UpdateBlobDTO
         {
-            ContentEncoding = "gzip",
-            ContentLanguage = "en-us",
+            ContainerName = "test-container",
+            BlobName = "existing-blob.txt",
             Metadata = new Dictionary<string, string> { ["new"] = "value" },
             Tags = new Dictionary<string, string> { ["new-tag"] = "value" }
         };
 
         var updatedAzuriteBlob = CreateBlobItem("existing-blob.txt", etag: "new-etag");
-        updatedAzuriteBlob.ContentEncoding = "gzip";
-        updatedAzuriteBlob.ContentLanguage = "en-us";
         updatedAzuriteBlob.Metadata = new Dictionary<string, string> { ["new"] = "value" };
         updatedAzuriteBlob.Tags = new Dictionary<string, string> { ["new-tag"] = "value" };
 
@@ -581,15 +664,13 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(updatedAzuriteBlob);
 
         // Act
-        var result = await repository.UpdateBlobAsync("test-container", "existing-blob.txt", updateDto, CancellationToken.None);
+        var result = await repository.UpdateBlobAsync(updateDto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
         result.Name.Should().Be("existing-blob.txt");
         result.ContainerName.Should().Be("test-container");
         result.ETag.Should().Be("new-etag");
-        result.ContentEncoding.Should().Be("gzip");
-        result.ContentLanguage.Should().Be("en-us");
         result.Metadata.Should().ContainKey("new").WhoseValue.Should().Be("value");
         result.Tags.Should().ContainKey("new-tag").WhoseValue.Should().Be("value");
 
@@ -598,8 +679,6 @@ public class StorageRepository_Tests : SqliteDbTests
             "test-container",
             "existing-blob.txt",
             Arg.Is<AzuriteBlobProperties>(p =>
-                p.ContentEncoding == "gzip" &&
-                p.ContentLanguage == "en-us" &&
                 p.Metadata.ContainsKey("new") && p.Metadata["new"] == "value" &&
                 p.Tags.ContainsKey("new-tag") && p.Tags["new-tag"] == "value"),
             Arg.Any<CancellationToken>());
@@ -634,10 +713,10 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new BlobUpdateDTO
+        var updateDto = new UpdateBlobDTO
         {
-            ContentEncoding = string.Empty,
-            ContentLanguage = string.Empty,
+            ContainerName = "test-container",
+            BlobName = "existing-blob.txt",
             Metadata = new Dictionary<string, string>(),
             Tags = new Dictionary<string, string>()
         };
@@ -650,7 +729,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .Returns(updatedAzuriteBlob);
 
         // Act
-        var result = await repository.UpdateBlobAsync("test-container", "existing-blob.txt", updateDto, CancellationToken.None);
+        var result = await repository.UpdateBlobAsync(updateDto, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -686,8 +765,10 @@ public class StorageRepository_Tests : SqliteDbTests
 
         var repository = CreateRepository(context);
 
-        var updateDto = new BlobUpdateDTO
+        var updateDto = new UpdateBlobDTO
         {
+            ContainerName = "test-container",
+            BlobName = "existing-blob.txt",
             Metadata = new Dictionary<string, string> { ["new"] = "value" },
             Tags = new Dictionary<string, string>()
         };
@@ -696,7 +777,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .ThrowsAsync(new AzuriteServiceException("Update failed"));
 
         // Act
-        var act = async () => await repository.UpdateBlobAsync("test-container", "existing-blob.txt", updateDto, CancellationToken.None);
+        var act = async () => await repository.UpdateBlobAsync(updateDto, CancellationToken.None);
 
         // Assert
         await act.Should().ThrowAsync<AzuriteServiceException>();
@@ -715,8 +796,10 @@ public class StorageRepository_Tests : SqliteDbTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var updateDto = new BlobUpdateDTO
+        var updateDto = new UpdateBlobDTO
         {
+            ContainerName = "test-container",
+            BlobName = "test-blob.txt",
             Metadata = new Dictionary<string, string>(),
             Tags = new Dictionary<string, string>()
         };
@@ -725,7 +808,7 @@ public class StorageRepository_Tests : SqliteDbTests
             .ThrowsAsync(new OperationCanceledException());
 
         // Act
-        var act = async () => await repository.UpdateBlobAsync("test-container", "test-blob.txt", updateDto, cts.Token);
+        var act = async () => await repository.UpdateBlobAsync(updateDto, cts.Token);
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
@@ -2612,6 +2695,145 @@ public class StorageRepository_Tests : SqliteDbTests
             }
             base.Dispose(disposing);
         }
+    }
+
+    #endregion
+
+    #region ValidateBlobName Tests
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithValidBlobName_ShouldNotThrowException()
+    {
+        // Arrange
+        var validBlobName = "test-blob.txt";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(validBlobName);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithBlobNameContainingSlashes_ShouldNotThrowException()
+    {
+        // Arrange
+        var validBlobName = "folder/subfolder/test-blob.txt";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(validBlobName);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithBlobNameContainingSpecialCharacters_ShouldNotThrowException()
+    {
+        // Arrange
+        var validBlobName = "test_blob-2024.01.01.txt";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(validBlobName);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithNullBlobName_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        string? nullBlobName = null;
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(nullBlobName!);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithEmptyBlobName_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var emptyBlobName = string.Empty;
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(emptyBlobName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithWhitespaceBlobName_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var whitespaceBlobName = "   ";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(whitespaceBlobName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithTabCharacterBlobName_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var tabBlobName = "\t";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(tabBlobName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithNewlineBlobName_ShouldThrowAzuriteServiceException()
+    {
+        // Arrange
+        var newlineBlobName = "\n";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(newlineBlobName);
+
+        // Assert
+        act.Should().Throw<AzuriteServiceException>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithSingleCharacterBlobName_ShouldNotThrowException()
+    {
+        // Arrange
+        var singleCharBlobName = "a";
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(singleCharBlobName);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ValidateBlobName_WithVeryLongBlobName_ShouldNotThrowException()
+    {
+        // Arrange
+        var longBlobName = new string('a', 1000);
+
+        // Act
+        Action act = () => StorageRepository.ValidateBlobName(longBlobName);
+
+        // Assert
+        act.Should().NotThrow();
     }
 
     #endregion

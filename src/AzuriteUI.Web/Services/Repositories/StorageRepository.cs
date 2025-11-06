@@ -67,8 +67,18 @@ public class StorageRepository(
     public async Task DeleteBlobAsync(string containerName, string blobName, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("DeleteBlobAsync('{containerName}', '{blobName}') called", containerName, blobName);
-        await azurite.DeleteBlobAsync(containerName, blobName, cancellationToken);
-        await context.RemoveBlobAsync(containerName, blobName, cancellationToken);
+        ValidateContainerName(containerName);
+        ValidateBlobName(blobName);
+        try
+        {
+            await azurite.DeleteBlobAsync(containerName, blobName, cancellationToken);
+            await context.RemoveBlobAsync(containerName, blobName, cancellationToken);
+        }
+        catch (AzuriteServiceException ex) when (ex.StatusCode == StatusCodes.Status404NotFound)
+        {
+            // Ensure the blob is removed from the cache even if it was not found in Azurite.
+            await context.RemoveBlobAsync(containerName, blobName, cancellationToken);
+        }
     }
 
     /// <summary>
@@ -81,31 +91,31 @@ public class StorageRepository(
     public async Task<BlobDTO?> GetBlobAsync(string containerName, string blobName, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("GetBlobAsync('{containerName}', '{blobName}') called", containerName, blobName);
+        ValidateContainerName(containerName);
+        ValidateBlobName(blobName);
         return await Blobs.FirstOrDefaultAsync(b => b.ContainerName == containerName && b.Name == blobName, cancellationToken);
     }
 
     /// <summary>
     /// Updates an existing blob in Azurite and updates the cache.
     /// </summary>
-    /// <param name="containerName">The name of the container to update.</param>
-    /// <param name="blobName">The name of the blob to update.</param>
-    /// <param name="updateDto">The blob properties to update.</param>
+    /// <param name="dto">The blob properties to update.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The updated blob DTO.</returns>
-    public async Task<BlobDTO> UpdateBlobAsync(string containerName, string blobName, BlobUpdateDTO updateDto, CancellationToken cancellationToken = default)
+    public async Task<BlobDTO> UpdateBlobAsync(UpdateBlobDTO dto, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("UpdateBlobAsync('{containerName}', '{blobName}') called", containerName, blobName);
+        logger.LogDebug("UpdateBlobAsync('{containerName}', '{blobName}') called", dto.ContainerName, dto.BlobName);
+        ValidateContainerName(dto.ContainerName);
+        ValidateBlobName(dto.BlobName);
         var properties = new AzuriteBlobProperties
         {
-            ContentEncoding = updateDto.ContentEncoding,
-            ContentLanguage = updateDto.ContentLanguage,
-            Metadata = updateDto.Metadata,
-            Tags = updateDto.Tags,
+            Metadata = dto.Metadata,
+            Tags = dto.Tags,
         };
-        var updatedBlob = await azurite.UpdateBlobAsync(containerName, blobName, properties, cancellationToken);
-        await context.UpsertBlobAsync(updatedBlob, containerName, cancellationToken);
+        var updatedBlob = await azurite.UpdateBlobAsync(dto.ContainerName, dto.BlobName, properties, cancellationToken);
+        await context.UpsertBlobAsync(updatedBlob, dto.ContainerName, cancellationToken);
         // Single is ok here because we've done an Upsert on the database.
-        return await Blobs.SingleAsync(b => b.ContainerName == containerName && b.Name == blobName, cancellationToken);
+        return await Blobs.SingleAsync(b => b.ContainerName == dto.ContainerName && b.Name == dto.BlobName, cancellationToken);
     }
     #endregion
 
@@ -532,6 +542,19 @@ public class StorageRepository(
             {
                 StatusCode = StatusCodes.Status400BadRequest
             };
+        }
+    }
+
+    /// <summary>
+    /// Throws an exception if the blob name is not valid.
+    /// </summary>
+    /// <param name="blobName">The name of the blob to validate.</param>
+    /// <exception cref="AzuriteServiceException">Thrown if the blob name is invalid.</exception>
+    internal static void ValidateBlobName(string blobName)
+    {
+        if (string.IsNullOrWhiteSpace(blobName))
+        {
+            throw new AzuriteServiceException("Blob name must be provided.") { StatusCode = StatusCodes.Status400BadRequest };
         }
     }
 

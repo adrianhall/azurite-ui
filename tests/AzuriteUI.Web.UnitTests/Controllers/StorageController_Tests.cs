@@ -41,17 +41,6 @@ public class StorageController_Tests
     }
 
     /// <summary>
-    /// Creates ODataQueryOptions for testing with the specified query string.
-    /// </summary>
-    private static ODataQueryOptions CreateTestQueryOptions(string queryString = "")
-    {
-        var context = CreateTestHttpContext(queryString);
-        var edmModel = CreateTestEdmModel();
-        var queryContext = new ODataQueryContext(edmModel, typeof(ContainerDTO), new Microsoft.OData.UriParser.ODataPath());
-        return new ODataQueryOptions(queryContext, context.Request);
-    }
-
-    /// <summary>
     /// Creates ODataQueryOptions of type T for testing with the specified query string.
     /// </summary>
     /// <typeparam name="T">The type for the query options.</typeparam>
@@ -476,7 +465,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithValidParameters_ShouldCreateResponse()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions();
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>();
         var results = new List<object> { new { Id = 1 }, new { Id = 2 } };
         int totalCount = 100;
         int filteredCount = 50;
@@ -495,7 +484,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithNullResults_ShouldReturnEmptyItems()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions();
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>();
         int totalCount = 0;
         int filteredCount = 0;
 
@@ -513,7 +502,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithMoreResultsAvailable_ShouldHaveNextLink()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions("?$skip=0&$top=25");
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>("?$skip=0&$top=25");
         var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
         int totalCount = 100;
         int filteredCount = 100;
@@ -530,7 +519,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithNoMoreResults_ShouldNotHaveNextLink()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions("?$skip=75&$top=25");
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>("?$skip=75&$top=25");
         var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
         int totalCount = 100;
         int filteredCount = 100;
@@ -546,7 +535,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithSkipGreaterThanZero_ShouldHavePrevLink()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions("?$skip=25&$top=25");
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>("?$skip=25&$top=25");
         var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
         int totalCount = 100;
         int filteredCount = 100;
@@ -564,7 +553,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithSkipZero_ShouldNotHavePrevLink()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions("?$skip=0&$top=25");
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>("?$skip=0&$top=25");
         var results = Enumerable.Range(0, 25).Select(i => new { Id = i }).Cast<object>();
         int totalCount = 100;
         int filteredCount = 100;
@@ -580,7 +569,7 @@ public class StorageController_Tests
     public void CreatePagedResponse_WithEmptyResults_ShouldHaveZeroCounts()
     {
         // Arrange
-        var queryOptions = CreateTestQueryOptions();
+        var queryOptions = CreateTestQueryOptions<ContainerDTO>();
         var results = new List<object>();
         int totalCount = 0;
         int filteredCount = 0;
@@ -1093,6 +1082,56 @@ public class StorageController_Tests
 
         // Act
         var result = await controller.DeleteContainerAsync(containerName);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    #endregion
+
+    #region DeleteBlobAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task DeleteBlobAsync_WhenAzuriteServiceExceptionWith404IsThrown_ShouldReturnNoContent()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        // Set up HttpContext
+        var context = new DefaultHttpContext();
+        context.Request.Method = "DELETE";
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = context
+        };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var blob = new BlobDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow
+        };
+
+        // Mock repository to return a blob
+        repository.GetBlobAsync(containerName, blobName, Arg.Any<CancellationToken>())
+            .Returns(blob);
+
+        // Mock repository to throw AzuriteServiceException with 404 when deleting
+        var exception = new AzuriteServiceException("Blob not found in Azurite")
+        {
+            StatusCode = StatusCodes.Status404NotFound
+        };
+        repository.DeleteBlobAsync(containerName, blobName, Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(exception));
+
+        // Act
+        var result = await controller.DeleteBlobAsync(containerName, blobName);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();

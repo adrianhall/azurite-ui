@@ -34,12 +34,10 @@ public interface IStorageRepository
     /// <summary>
     /// Updates an existing blob in Azurite and updates the cache.
     /// </summary>
-    /// <param name="containerName">The name of the container to update.</param>
-    /// <param name="blobName">The name of the blob to update.</param>
-    /// <param name="updateDto">The blob properties to update.</param>
+    /// <param name="dto">The blob properties to update.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns>The updated blob DTO.</returns>
-    Task<BlobDTO> UpdateBlobAsync(string containerName, string blobName, BlobUpdateDTO updateDto, CancellationToken cancellationToken = default);
+    Task<BlobDTO> UpdateBlobAsync(UpdateBlobDTO dto, CancellationToken cancellationToken = default);
     #endregion
 
     #region Container Access

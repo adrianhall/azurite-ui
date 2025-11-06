@@ -20,4 +20,13 @@ public static class SystemExtensions
         => !etag.IsWeak
         && etag.Tag.Length > 0
         && (etag.Tag == "*" || etag.Tag.ToString().Trim('"').Equals(eTag.Trim('"'), StringComparison.Ordinal));
+
+    /// <summary>
+    /// Sets the value to the default if the value is null or whitespace.
+    /// </summary>
+    /// <param name="value">The original value.</param>
+    /// <param name="defaultValue">The default value to use if the original value is null or whitespace.</param>
+    /// <returns>The original value if it is not null or whitespace; otherwise, the default value.</returns>
+    public static string OrDefault(this string? value, string defaultValue)
+        => string.IsNullOrWhiteSpace(value) ? defaultValue : value;
 }

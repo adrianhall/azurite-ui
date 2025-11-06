@@ -43,7 +43,11 @@ Add a 15 second timeout to each test that you write.
 
 ## Running tests
 
-Use `dotnet test` commands to run the tests within the single test file that you modify.  
+Use `dotnet test` commands to run the tests within the single test file that you modify.  For example:
+
+```bash
+dotnet test tests/AzuriteUI.Web.UnitTests/AzuriteUI.Web.UnitTests.csproj --filter "FullyQualifiedName~SystemExtensions_Tests"
+```
 
 Then run `dotnet cake --target=Test` to run the entire test suite.  
 
