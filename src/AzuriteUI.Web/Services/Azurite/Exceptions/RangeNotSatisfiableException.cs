@@ -41,4 +41,9 @@ public class RangeNotSatisfiableException : AzuriteServiceException
     {
         StatusCode = StatusCodes.Status416RangeNotSatisfiable;
     }
+
+    /// <summary>
+    /// The returned content length of the resource.
+    /// </summary>
+    public int? ContentLength { get; set; }
 }

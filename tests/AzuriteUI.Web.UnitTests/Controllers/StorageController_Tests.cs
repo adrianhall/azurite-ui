@@ -11,6 +11,7 @@ using Microsoft.Net.Http.Headers;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using NSubstitute;
+using System.Text;
 
 namespace AzuriteUI.Web.UnitTests.Controllers;
 
@@ -1037,6 +1038,464 @@ public class StorageController_Tests
 
         // Assert
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    #endregion
+
+    #region DownloadBlobAsync Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithValidParameters_ShouldReturnFileStreamResult()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName);
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        var fileResult = result as FileStreamResult;
+        fileResult!.FileStream.Should().BeSameAs(content);
+        fileResult.ContentType.Should().Be("text/plain");
+        fileResult.EntityTag.Should().NotBeNull();
+        fileResult.EntityTag!.Tag.ToString().Should().Contain("test-etag");
+        fileResult.LastModified.Should().NotBeNull();
+        fileResult.EnableRangeProcessing.Should().BeFalse();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithDispositionAttachment_ShouldSetContentDispositionHeader()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName, disposition: "attachment");
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.Headers.ContentDisposition.Should().NotBeEmpty();
+        var dispositionHeader = context.Response.Headers.ContentDisposition.ToString();
+        dispositionHeader.Should().Contain("attachment");
+        dispositionHeader.Should().Contain(blobName);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithDispositionInline_ShouldSetContentDispositionHeader()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName, disposition: "inline");
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.Headers.ContentDisposition.Should().NotBeEmpty();
+        var dispositionHeader = context.Response.Headers.ContentDisposition.ToString();
+        dispositionHeader.Should().Contain("inline");
+        dispositionHeader.Should().Contain(blobName);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithoutDisposition_ShouldNotSetContentDispositionHeader()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName);
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.Headers.ContentDisposition.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithCaseInsensitiveDisposition_ShouldAccept()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName, disposition: "ATTACHMENT");
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.Headers.ContentDisposition.Should().NotBeEmpty();
+        var dispositionHeader = context.Response.Headers.ContentDisposition.ToString();
+        dispositionHeader.Should().Contain("attachment");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithRangeRequest_ShouldReturn206AndSetContentRangeHeader()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        context.Request.Headers[HeaderNames.Range] = "bytes=0-9";
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("0123456789"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 10,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status206PartialContent,
+            ContentRange = "bytes 0-9/20"
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, "bytes=0-9", Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName);
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status206PartialContent);
+        context.Response.Headers.ContentRange.Should().NotBeEmpty();
+        context.Response.Headers.ContentRange.ToString().Should().Be("bytes 0-9/20");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithoutRangeRequest_ShouldReturn200AndNoContentRangeHeader()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName);
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        context.Response.Headers.ContentRange.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_ShouldSetAcceptRangesHeader()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test-blob.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName);
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.Headers.AcceptRanges.Should().NotBeEmpty();
+        context.Response.Headers.AcceptRanges.ToString().Should().Be("bytes");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task DownloadBlobAsync_WithSpecialCharactersInFilename_ShouldEncodeContentDisposition()
+    {
+        // Arrange
+        var repository = Substitute.For<IStorageRepository>();
+        var edmModel = Substitute.For<IEdmModel>();
+        var logger = Substitute.For<ILogger<StorageController>>();
+        var controller = new StorageController(repository, edmModel, logger);
+
+        var context = new DefaultHttpContext();
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+
+        var containerName = "test-container";
+        var blobName = "test file with spaces.txt";
+        var content = new MemoryStream(Encoding.UTF8.GetBytes("test content"));
+        var downloadResult = new BlobDownloadDTO
+        {
+            Name = blobName,
+            ContainerName = containerName,
+            Content = content,
+            ContentType = "text/plain",
+            ContentLength = 12,
+            ETag = "\"test-etag\"",
+            LastModified = DateTimeOffset.UtcNow,
+            StatusCode = StatusCodes.Status200OK
+        };
+
+        repository.DownloadBlobAsync(containerName, blobName, null, Arg.Any<CancellationToken>())
+            .Returns(downloadResult);
+
+        // Act
+        var result = await controller.DownloadBlobAsync(containerName, blobName, disposition: "attachment");
+
+        // Assert
+        result.Should().BeOfType<FileStreamResult>();
+        context.Response.Headers.ContentDisposition.Should().NotBeEmpty();
+        var dispositionHeader = context.Response.Headers.ContentDisposition.ToString();
+        dispositionHeader.Should().Contain("attachment");
+        // The filename should be URI-encoded for special characters
+        (dispositionHeader.Contains("test%20file%20with%20spaces.txt") || dispositionHeader.Contains(blobName)).Should().BeTrue();
+    }
+
+    #endregion
+
+    #region ConvertToEntityTagHeaderValue Tests
+
+    [Fact(Timeout = 15000)]
+    public void ConvertToEntityTagHeaderValue_WithNullETag_ShouldReturnNull()
+    {
+        // Arrange
+        string? etag = null;
+
+        // Act
+        var result = StorageController.ConvertToEntityTagHeaderValue(etag);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConvertToEntityTagHeaderValue_WithEmptyETag_ShouldReturnNull()
+    {
+        // Arrange
+        string etag = string.Empty;
+
+        // Act
+        var result = StorageController.ConvertToEntityTagHeaderValue(etag);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConvertToEntityTagHeaderValue_WithQuotedETag_ShouldReturnEntityTag()
+    {
+        // Arrange
+        string etag = "\"test-etag\"";
+
+        // Act
+        var result = StorageController.ConvertToEntityTagHeaderValue(etag);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tag.ToString().Should().Be("\"test-etag\"");
+        result.IsWeak.Should().BeFalse();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConvertToEntityTagHeaderValue_WithUnquotedETag_ShouldAddQuotesAndReturnEntityTag()
+    {
+        // Arrange
+        string etag = "test-etag";
+
+        // Act
+        var result = StorageController.ConvertToEntityTagHeaderValue(etag);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tag.ToString().Should().Be("\"test-etag\"");
+        result.IsWeak.Should().BeFalse();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConvertToEntityTagHeaderValue_WithComplexETag_ShouldHandleCorrectly()
+    {
+        // Arrange
+        string etag = "\"0x8D9F8B8C9D0E1F2\"";
+
+        // Act
+        var result = StorageController.ConvertToEntityTagHeaderValue(etag);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tag.ToString().Should().Be("\"0x8D9F8B8C9D0E1F2\"");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ConvertToEntityTagHeaderValue_WithETagContainingSpecialCharacters_ShouldPreserve()
+    {
+        // Arrange
+        string etag = "abc123-xyz_456";
+
+        // Act
+        var result = StorageController.ConvertToEntityTagHeaderValue(etag);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Tag.ToString().Should().Be("\"abc123-xyz_456\"");
     }
 
     #endregion

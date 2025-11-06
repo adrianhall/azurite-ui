@@ -247,6 +247,42 @@ public class AzuriteExceptionFilter_Tests
         logEntry.Message.Should().Contain("416");
     }
 
+    [Fact(Timeout = 15000)]
+    public void OnException_RangeNotSatisfiableExceptionWithContentLength_SetsContentRangeHeaderAndExtension()
+    {
+        // Arrange
+        var logger = new FakeLogger<AzuriteExceptionFilter>();
+        var filter = new AzuriteExceptionFilter(logger);
+
+        var exception = new RangeNotSatisfiableException("Requested range exceeds blob size")
+        {
+            ContentLength = 1024
+        };
+        var context = CreateExceptionContext(exception, "/api/containers/test/blobs/file.txt/content");
+
+        // Act
+        filter.OnException(context);
+
+        // Assert
+        context.ExceptionHandled.Should().BeTrue();
+
+        // Verify the ContentRange header is set correctly
+        context.HttpContext.Response.Headers.Should().ContainKey("Content-Range");
+        context.HttpContext.Response.Headers["Content-Range"].ToString().Should().Be("bytes */1024");
+
+        // Verify the ProblemDetails includes contentLength in extensions
+        var result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status416RangeNotSatisfiable);
+
+        var problemDetails = result.Value.Should().BeOfType<ProblemDetails>().Subject;
+        problemDetails.Status.Should().Be(StatusCodes.Status416RangeNotSatisfiable);
+        problemDetails.Title.Should().Be("Range Not Satisfiable");
+        problemDetails.Detail.Should().Be("Requested range exceeds blob size");
+        problemDetails.Instance.Should().Be("/api/containers/test/blobs/file.txt/content");
+        problemDetails.Extensions.Should().ContainKey("contentLength");
+        problemDetails.Extensions["contentLength"].Should().Be(1024);
+    }
+
     #endregion
 
     #region AzuriteServiceException Tests

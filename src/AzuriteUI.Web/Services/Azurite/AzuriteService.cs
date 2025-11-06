@@ -475,7 +475,7 @@ public class AzuriteService : IAzuriteService
         {
             404 => new ResourceNotFoundException("The specified resource was not found.", ex) { ResourceName = resourceName },
             409 => new ResourceExistsException("The specified resource already exists.", ex) { ResourceName = resourceName },
-            416 => new RangeNotSatisfiableException("The specified range is not satisfiable.", ex),
+            416 => new RangeNotSatisfiableException("The specified range is not satisfiable.", ex) { ContentLength = ex.GetRawResponse()?.Headers.ContentLength },
             _ => new AzuriteServiceException("An error occurred while communicating with the Azurite service.", ex) { StatusCode = ex.Status },
         };
     }

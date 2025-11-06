@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using AzuriteUI.Web.Services.Azurite.Exceptions;
 using System.Diagnostics.CodeAnalysis;
+using Azure;
 
 namespace AzuriteUI.Web.Filters;
 
@@ -55,6 +56,11 @@ public class AzuriteExceptionFilter : IExceptionFilter
         else if (azuriteException is ResourceExistsException existsEx && !string.IsNullOrEmpty(existsEx.ResourceName))
         {
             problemDetails.Extensions["resourceName"] = existsEx.ResourceName;
+        }
+        else if (azuriteException is RangeNotSatisfiableException rangeEx && rangeEx.ContentLength.HasValue)
+        {
+            context.HttpContext.Response.Headers.ContentRange = $"bytes */{rangeEx.ContentLength.Value}";
+            problemDetails.Extensions["contentLength"] = rangeEx.ContentLength.Value;
         }
 
         // Set the result
