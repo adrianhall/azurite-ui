@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using System.Runtime.InteropServices;
 
 namespace AzuriteUI.Web.UnitTests.Services.Repositories;
 
@@ -2831,4 +2830,395 @@ public class StorageRepository_Tests : SqliteDbTests
     }
 
     #endregion
+
+    #region GetDashboardDataAsync Tests
+    #region Basic Functionality Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_WithEmptyDatabase_ShouldReturnZeroStats()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Stats.Should().NotBeNull();
+        result.Stats.Containers.Should().Be(0);
+        result.Stats.Blobs.Should().Be(0);
+        result.Stats.TotalBlobSize.Should().Be(0);
+        result.Stats.TotalImageSize.Should().Be(0);
+        result.RecentContainers.Should().BeEmpty();
+        result.RecentBlobs.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_WithVariousCounts_ShouldCalculateCorrectStats()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create 3 containers
+        for (int i = 0; i < 3; i++)
+        {
+            await CreateContainerModelAsync(context, $"container{i}");
+        }
+
+        // Create 5 blobs with known sizes
+        var containerName = "container0";
+        long expectedTotalSize = 0;
+        for (int i = 0; i < 5; i++)
+        {
+            long size = (i + 1) * 100;
+            var blob = CreateBlobModel($"blob{i}.txt", containerName, contentLength: size);
+            context.Blobs.Add(blob);
+            expectedTotalSize += size;
+        }
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Stats.Containers.Should().Be(3);
+        result.Stats.Blobs.Should().Be(5);
+        result.Stats.TotalBlobSize.Should().Be(expectedTotalSize);
+    }
+
+    #endregion
+
+    #region Image Size Calculation Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_WithImageBlobs_ShouldCalculateImageSizeCorrectly()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var containerName = await CreateContainerModelAsync(context, "test-container");
+
+        // Create image blobs
+        var imageBlob1 = CreateBlobModel("image1.jpg", "test-container", contentLength: 1000);
+        imageBlob1.ContentType = "image/jpeg";
+        context.Blobs.Add(imageBlob1);
+
+        var imageBlob2 = CreateBlobModel("image2.png", "test-container", contentLength: 2000);
+        imageBlob2.ContentType = "image/png";
+        context.Blobs.Add(imageBlob2);
+
+        // Create non-image blobs
+        var textBlob = CreateBlobModel("text.txt", "test-container", contentLength: 500);
+        textBlob.ContentType = "text/plain";
+        context.Blobs.Add(textBlob);
+
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Stats.TotalBlobSize.Should().Be(3500);
+        result.Stats.TotalImageSize.Should().Be(3000);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_WithNoImages_ShouldHaveZeroImageSize()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var textBlob = CreateBlobModel("text.txt", "test-container", contentLength: 500);
+        textBlob.ContentType = "text/plain";
+        context.Blobs.Add(textBlob);
+
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Stats.TotalBlobSize.Should().Be(500);
+        result.Stats.TotalImageSize.Should().Be(0);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_WithMixedImageTypes_ShouldIncludeAllImageContentTypes()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var imageTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml" };
+        long expectedImageSize = 0;
+
+        foreach (var contentType in imageTypes)
+        {
+            var blob = CreateBlobModel($"image-{contentType.Replace("/", "-")}", "test-container", contentLength: 100);
+            blob.ContentType = contentType;
+            context.Blobs.Add(blob);
+            expectedImageSize += 100;
+        }
+
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Stats.TotalImageSize.Should().Be(expectedImageSize);
+    }
+
+    #endregion
+
+    #region Container LastModified Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_ContainerLastModified_ShouldUseMaxOfContainerAndBlobTimes()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var containerTime = new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        var blobTime = new DateTimeOffset(2024, 1, 2, 12, 0, 0, TimeSpan.Zero);
+
+        await CreateContainerModelAsync(context, "test-container", lastModified: containerTime);
+
+        var blob = CreateBlobModel("blob.txt", "test-container", lastModified: blobTime);
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+        container.LastModified.Should().Be(blobTime, "should use the blob's more recent timestamp");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_ContainerLastModified_WhenContainerIsNewer_ShouldUseContainerTime()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var blobTime = new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        var containerTime = new DateTimeOffset(2024, 1, 2, 12, 0, 0, TimeSpan.Zero);
+
+        await CreateContainerModelAsync(context, "test-container", lastModified: containerTime);
+
+        var blob = CreateBlobModel("blob.txt", "test-container", lastModified: blobTime);
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+        container.LastModified.Should().Be(containerTime, "should use the container's more recent timestamp");
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_ContainerWithoutBlobs_ShouldUseContainerLastModified()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        var containerTime = new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
+        await CreateContainerModelAsync(context, "empty-container", lastModified: containerTime);
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+        container.Name.Should().Be("empty-container");
+        container.LastModified.Should().Be(containerTime);
+        container.BlobCount.Should().Be(0);
+        container.TotalSize.Should().Be(0);
+    }
+
+    #endregion
+
+    #region Recent Containers Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_RecentContainers_ShouldLimitToTen()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        // Create 15 containers with sequential timestamps
+        for (int i = 0; i < 15; i++)
+        {
+            var timestamp = new DateTimeOffset(2024, 1, 1, 12, i, 0, TimeSpan.Zero);
+            await CreateContainerModelAsync(context, $"container{i:D2}", lastModified: timestamp);
+        }
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Stats.Containers.Should().Be(15);
+        result.RecentContainers.Should().HaveCount(10);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_RecentContainers_ShouldBeOrderedByLastModifiedDescending()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+
+        for (int i = 0; i < 5; i++)
+        {
+            var timestamp = new DateTimeOffset(2024, 1, 1, 12, i, 0, TimeSpan.Zero);
+            await CreateContainerModelAsync(context, $"container{i}", lastModified: timestamp);
+        }
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentContainers.Should().HaveCount(5);
+        var lastModifiedDates = result.RecentContainers.Select(c => c.LastModified).ToList();
+        lastModifiedDates.Should().BeInDescendingOrder();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_RecentContainers_ShouldIncludeBlobCountAndTotalSize()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        long expectedTotalSize = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            long size = (i + 1) * 100;
+            var blob = CreateBlobModel($"blob{i}.txt", "test-container", contentLength: size);
+            context.Blobs.Add(blob);
+            expectedTotalSize += size;
+        }
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+        container.BlobCount.Should().Be(3);
+        container.TotalSize.Should().Be(expectedTotalSize);
+    }
+
+    #endregion
+
+    #region Recent Blobs Tests
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_RecentBlobs_ShouldLimitToTen()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        // Create 15 blobs with sequential timestamps
+        for (int i = 0; i < 15; i++)
+        {
+            var timestamp = new DateTimeOffset(2024, 1, 1, 12, i, 0, TimeSpan.Zero);
+            var blob = CreateBlobModel($"blob{i:D2}.txt", "test-container", lastModified: timestamp);
+            context.Blobs.Add(blob);
+        }
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Stats.Blobs.Should().Be(15);
+        result.RecentBlobs.Should().HaveCount(10);
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_RecentBlobs_ShouldBeOrderedByLastModifiedDescending()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        for (int i = 0; i < 5; i++)
+        {
+            var timestamp = new DateTimeOffset(2024, 1, 1, 12, i, 0, TimeSpan.Zero);
+            var blob = CreateBlobModel($"blob{i}.txt", "test-container", lastModified: timestamp);
+            context.Blobs.Add(blob);
+        }
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentBlobs.Should().HaveCount(5);
+        var lastModifiedDates = result.RecentBlobs.Select(b => b.LastModified).ToList();
+        lastModifiedDates.Should().BeInDescendingOrder();
+    }
+
+    [Fact(Timeout = 15000)]
+    public async Task GetDashboardDataAsync_RecentBlobs_ShouldIncludeAllRequiredProperties()
+    {
+        // Arrange
+        using var context = CreateDbContext();
+        await CreateContainerModelAsync(context, "test-container");
+
+        var blob = CreateBlobModel("test-blob.txt", "test-container", contentLength: 1024);
+        blob.ContentType = "text/plain";
+        context.Blobs.Add(blob);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.GetDashboardDataAsync();
+
+        // Assert
+        result.RecentBlobs.Should().HaveCount(1);
+        var blobInfo = result.RecentBlobs.First();
+        blobInfo.Name.Should().Be("test-blob.txt");
+        blobInfo.ContainerName.Should().Be("test-container");
+        blobInfo.ContentType.Should().Be("text/plain");
+        blobInfo.ContentLength.Should().Be(1024);
+        blobInfo.LastModified.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
+    }
+
+    #endregion
+    #endregion
 }
+

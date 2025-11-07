@@ -830,3 +830,63 @@ No additional request headers are supported.
 * 204 No Content
 * 400 Bad Request
 * 404 Not Found
+
+### GetDashboard: `GET /api/dashboard`
+
+Retrieves dashboard information including statistics about containers and blobs, and lists of recently modified containers and blobs.
+
+#### GetDashboard Request
+
+**Query Parameters**:
+
+None.
+
+**Headers**:
+
+No additional request headers are supported.
+
+#### GetDashboard Response
+
+**Status Codes**:
+
+* 200 OK
+* 400 Bad Request
+
+**Response Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "stats": {
+        "containers": 0,
+        "blobs": 0,
+        "totalBlobSize": 0,
+        "totalImageSize": 0
+    },
+    "recentContainers": [
+        {
+            "name": "container-name",
+            "lastModified": "iso-8601 utc timestamp",
+            "blobCount": 0,
+            "totalSize": 0
+        }
+    ],
+    "recentBlobs": [
+        {
+            "name": "blob-name",
+            "containerName": "container-name",
+            "lastModified": "iso-8601 utc timestamp",
+            "contentType": "application/octet-stream",
+            "contentLength": 0
+        }
+    ]
+}
+```
+
+This matches the `DashboardResponse` model, which includes:
+- `stats` (DashboardStats): Statistics including total container count, blob count, total blob size, and total image size
+- `recentContainers` (RecentContainerInfo[]): Up to 10 most recently modified containers, ordered by the most recent of either the container's last modified date or the last modified date of its most recent blob
+- `recentBlobs` (RecentBlobInfo[]): Up to 10 most recently modified blobs, ordered by last modified date descending

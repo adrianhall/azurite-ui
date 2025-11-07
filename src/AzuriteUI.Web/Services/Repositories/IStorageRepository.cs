@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Controllers.Models;
 using AzuriteUI.Web.Services.Repositories.Models;
 
 namespace AzuriteUI.Web.Services.Repositories;
@@ -79,6 +80,15 @@ public interface IStorageRepository
     Task<ContainerDTO> UpdateContainerAsync(UpdateContainerDTO updateDto, CancellationToken cancellationToken = default);
     #endregion
 
+    #region Dashboard
+    /// <summary>
+    /// Retrieves dashboard data including statistics and recently modified containers and blobs.
+    /// </summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>The dashboard data.</returns>
+    Task<DashboardResponse> GetDashboardDataAsync(CancellationToken cancellationToken = default);
+    #endregion
+    
     #region Upload and Download
     /// <summary>
     /// The queryable collection of upload sessions.

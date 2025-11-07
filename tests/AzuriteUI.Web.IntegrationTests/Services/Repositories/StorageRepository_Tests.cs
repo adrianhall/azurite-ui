@@ -1083,4 +1083,277 @@ public class StorageRepository_Tests : IClassFixture<AzuriteFixture>, IAsyncLife
         repoBlob!.Name.Should().Be(blobName);
     }
     #endregion
+
+    #region GetDashboardData Tests    
+    #region Basic Tests
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_WithZeroContainers_ShouldReturnEmptyDashboard()
+    {
+        // Arrange
+        // (No containers or blobs in the database)
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Stats.Should().NotBeNull();
+        result.Stats.Containers.Should().Be(0);
+        result.Stats.Blobs.Should().Be(0);
+        result.Stats.TotalBlobSize.Should().Be(0);
+        result.Stats.TotalImageSize.Should().Be(0);
+        result.RecentContainers.Should().BeEmpty();
+        result.RecentBlobs.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_WithTenContainersAndBlobs_ShouldReturnAll()
+    {
+        // Arrange
+        for (int i = 0; i < 10; i++)
+        {
+            var containerName = $"container{i:D2}";
+            await _fixture.CreateContainerAsync(containerName);
+            var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+            await _context.UpsertContainerAsync(azuriteContainer);
+
+            await _fixture.CreateBlobAsync(containerName, $"blob{i}.txt", $"content{i}");
+            var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, $"blob{i}.txt");
+            await _context.UpsertBlobAsync(azuriteBlob, containerName);
+
+            // Small delay to ensure different timestamps
+            await Task.Delay(50);
+        }
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Stats.Containers.Should().Be(10);
+        result.Stats.Blobs.Should().Be(10);
+        result.Stats.TotalBlobSize.Should().BeGreaterThan(0);
+        result.RecentContainers.Should().HaveCount(10);
+        result.RecentBlobs.Should().HaveCount(10);
+    }
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_WithTwentyContainersAndBlobs_ShouldReturnOnlyTenRecent()
+    {
+        // Arrange
+        for (int i = 0; i < 20; i++)
+        {
+            var containerName = $"container{i:D2}";
+            await _fixture.CreateContainerAsync(containerName);
+            var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+            await _context.UpsertContainerAsync(azuriteContainer);
+
+            await _fixture.CreateBlobAsync(containerName, $"blob{i}.txt", $"content{i}");
+            var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, $"blob{i}.txt");
+            await _context.UpsertBlobAsync(azuriteBlob, containerName);
+
+            // Small delay to ensure different timestamps
+            await Task.Delay(50);
+        }
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Stats.Containers.Should().Be(20, "stats should include all containers");
+        result.Stats.Blobs.Should().Be(20, "stats should include all blobs");
+        result.RecentContainers.Should().HaveCount(10, "should return only 10 most recent containers");
+        result.RecentBlobs.Should().HaveCount(10, "should return only 10 most recent blobs");
+    }
+
+    #endregion
+
+    #region Container LastModified Tests
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_ContainerLastModified_ShouldUseMaxOfContainerAndBlobTimes()
+    {
+        // Arrange
+        var containerName = "test-container";
+        await _fixture.CreateContainerAsync(containerName);
+        var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(azuriteContainer);
+        var containerLastModified = azuriteContainer.LastModified;
+
+        // Add a delay and create a blob (should have a later timestamp)
+        await Task.Delay(200);
+        await _fixture.CreateBlobAsync(containerName, "blob.txt", "content");
+        var azuriteBlob = await _azuriteService.GetBlobAsync(containerName, "blob.txt");
+        await _context.UpsertBlobAsync(azuriteBlob, containerName);
+
+        // Get the updated container (Azure updates container LastModified when blobs are added)
+        var updatedContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(updatedContainer);
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+
+        // The dashboard should use the max of container and blob timestamps
+        var expectedTimestamp = azuriteBlob.LastModified > updatedContainer.LastModified
+            ? azuriteBlob.LastModified
+            : updatedContainer.LastModified;
+        container.LastModified.Should().Be(expectedTimestamp);
+    }
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_ContainerWithoutBlobs_ShouldUseContainerLastModified()
+    {
+        // Arrange
+        var containerName = "empty-container";
+        await _fixture.CreateContainerAsync(containerName);
+        var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(azuriteContainer);
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+        container.Name.Should().Be(containerName);
+        container.LastModified.Should().Be(azuriteContainer.LastModified);
+        container.BlobCount.Should().Be(0);
+        container.TotalSize.Should().Be(0);
+    }
+
+    #endregion
+
+    #region Image Size Calculation Tests
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_ImageSize_ShouldIncludeOnlyImageContentTypes()
+    {
+        // Arrange
+        var containerName = "test-container";
+        await _fixture.CreateContainerAsync(containerName);
+        var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(azuriteContainer);
+
+        // Create image blobs
+        await _fixture.CreateBlobAsync(containerName, "image1.jpg", "fake-jpg-content", "image/jpeg");
+        var blob1 = await _azuriteService.GetBlobAsync(containerName, "image1.jpg");
+        await _context.UpsertBlobAsync(blob1, containerName);
+
+        await _fixture.CreateBlobAsync(containerName, "image2.png", "fake-png-content", "image/png");
+        var blob2 = await _azuriteService.GetBlobAsync(containerName, "image2.png");
+        await _context.UpsertBlobAsync(blob2, containerName);
+
+        // Create non-image blobs
+        await _fixture.CreateBlobAsync(containerName, "text.txt", "text-content", "text/plain");
+        var blob3 = await _azuriteService.GetBlobAsync(containerName, "text.txt");
+        await _context.UpsertBlobAsync(blob3, containerName);
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Stats.Blobs.Should().Be(3);
+        result.Stats.TotalBlobSize.Should().BeGreaterThan(0);
+        result.Stats.TotalImageSize.Should().BeGreaterThan(0);
+        result.Stats.TotalImageSize.Should().BeLessThan(result.Stats.TotalBlobSize);
+
+        long expectedImageSize = blob1.ContentLength + blob2.ContentLength;
+        result.Stats.TotalImageSize.Should().Be(expectedImageSize);
+    }
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_ImageSize_WithNoImages_ShouldBeZero()
+    {
+        // Arrange
+        var containerName = "test-container";
+        await _fixture.CreateContainerAsync(containerName);
+        var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(azuriteContainer);
+
+        await _fixture.CreateBlobAsync(containerName, "text.txt", "text-content", "text/plain");
+        var blob = await _azuriteService.GetBlobAsync(containerName, "text.txt");
+        await _context.UpsertBlobAsync(blob, containerName);
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Stats.TotalImageSize.Should().Be(0);
+        result.Stats.TotalBlobSize.Should().BeGreaterThan(0);
+    }
+
+    #endregion
+
+    #region Blob Ordering and Limiting Tests
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_RecentBlobs_ShouldBeOrderedByLastModifiedDescending()
+    {
+        // Arrange
+        var containerName = "test-container";
+        await _fixture.CreateContainerAsync(containerName);
+        var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(azuriteContainer);
+
+        for (int i = 0; i < 5; i++)
+        {
+            await _fixture.CreateBlobAsync(containerName, $"blob{i}.txt", $"content{i}");
+            var blob = await _azuriteService.GetBlobAsync(containerName, $"blob{i}.txt");
+            await _context.UpsertBlobAsync(blob, containerName);
+            await Task.Delay(100); // Ensure different timestamps
+        }
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.RecentBlobs.Should().HaveCount(5);
+
+        var lastModifiedDates = result.RecentBlobs.Select(b => b.LastModified).ToList();
+        lastModifiedDates.Should().BeInDescendingOrder();
+    }
+
+    [Fact(Timeout = 60000)]
+    public async Task GetDashboardDataAsync_ContainerInfo_ShouldIncludeCorrectBlobCountAndTotalSize()
+    {
+        // Arrange
+        var containerName = "test-container";
+        await _fixture.CreateContainerAsync(containerName);
+        var azuriteContainer = await _azuriteService.GetContainerAsync(containerName);
+        await _context.UpsertContainerAsync(azuriteContainer);
+
+        long expectedSize = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            var content = $"content{i}";
+            await _fixture.CreateBlobAsync(containerName, $"blob{i}.txt", content);
+            var blob = await _azuriteService.GetBlobAsync(containerName, $"blob{i}.txt");
+            await _context.UpsertBlobAsync(blob, containerName);
+            expectedSize += blob.ContentLength;
+        }
+
+        // Act
+        var result = await _repository.GetDashboardDataAsync();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.RecentContainers.Should().HaveCount(1);
+        var container = result.RecentContainers.First();
+        container.BlobCount.Should().Be(3);
+        container.TotalSize.Should().Be(expectedSize);
+    }
+
+    #endregion
+    #endregion
 }

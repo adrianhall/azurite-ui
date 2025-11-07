@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Controllers.Models;
 using AzuriteUI.Web.Services.Azurite;
 using AzuriteUI.Web.Services.Azurite.Exceptions;
 using AzuriteUI.Web.Services.Azurite.Models;
@@ -225,6 +226,85 @@ public class StorageRepository(
 
         // Single is ok here because we've done an Upsert on the database.
         return await Containers.SingleAsync(c => c.Name == dto.ContainerName, cancellationToken);
+    }
+    #endregion
+    
+    #region Dashboard
+    /// <summary>
+    /// Retrieves dashboard data including statistics and recently modified containers and blobs.
+    /// </summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
+    /// <returns>The dashboard data.</returns>
+    public async Task<DashboardResponse> GetDashboardDataAsync(CancellationToken cancellationToken = default)
+    {
+        logger.LogDebug("GetDashboardDataAsync() called");
+
+        // Calculate statistics
+        var containerCount = await context.Containers.CountAsync(cancellationToken);
+        var blobCount = await context.Blobs.CountAsync(cancellationToken);
+        var totalBlobSize = await context.Blobs.SumAsync(b => (long?)b.ContentLength, cancellationToken) ?? 0L;
+        var totalImageSize = await context.Blobs
+            .Where(b => b.ContentType.StartsWith("image/"))
+            .SumAsync(b => (long?)b.ContentLength, cancellationToken) ?? 0L;
+
+        // Get recent blobs (top 10, ordered by LastModified descending)
+        var recentBlobs = await context.Blobs
+            .OrderByDescending(b => b.LastModified)
+            .Take(10)
+            .Select(b => new RecentBlobInfo
+            {
+                Name = b.Name,
+                ContainerName = b.ContainerName,
+                LastModified = b.LastModified,
+                ContentType = b.ContentType,
+                ContentLength = b.ContentLength
+            })
+            .ToListAsync(cancellationToken);
+
+        // Get recent containers (top 10, ordered by max(container.LastModified, max(blob.LastModified)) descending)
+        var recentContainers = await context.Containers
+            .GroupJoin(
+                context.Blobs,
+                container => container.Name,
+                blob => blob.ContainerName,
+                (container, blobs) => new
+                {
+                    Container = container,
+                    Blobs = blobs
+                })
+            .Select(x => new
+            {
+                x.Container.Name,
+                x.Container.LastModified,
+                BlobCount = x.Blobs.Count(),
+                TotalSize = x.Blobs.Sum(b => (long?)b.ContentLength) ?? 0L,
+                MaxBlobLastModified = x.Blobs.Max(b => (DateTimeOffset?)b.LastModified)
+            })
+            .Select(x => new RecentContainerInfo
+            {
+                Name = x.Name,
+                LastModified = x.MaxBlobLastModified.HasValue && x.MaxBlobLastModified.Value > x.LastModified
+                    ? x.MaxBlobLastModified.Value
+                    : x.LastModified,
+                BlobCount = x.BlobCount,
+                TotalSize = x.TotalSize
+            })
+            .OrderByDescending(c => c.LastModified)
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        return new DashboardResponse
+        {
+            Stats = new DashboardStats
+            {
+                Containers = containerCount,
+                Blobs = blobCount,
+                TotalBlobSize = totalBlobSize,
+                TotalImageSize = totalImageSize
+            },
+            RecentContainers = recentContainers,
+            RecentBlobs = recentBlobs
+        };
     }
     #endregion
 

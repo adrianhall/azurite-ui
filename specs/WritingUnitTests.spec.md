@@ -19,7 +19,7 @@ The unit tests are placed in the `tests/AzuriteUI.Web.UnitTests` project, and fo
 
 * Avoid testing exact error messages within logs.
 * Do not write tests that test debug log output.
-* Use Microsoft.Extensions.Diagnostics.Testing TestLogger classes for checking logs.
+* Use Microsoft.Extensions.Diagnostics.Testing `FakeLogger<T>` classes for checking logs.
 
 ### Mocking IConfiguration and IServiceProvider
 

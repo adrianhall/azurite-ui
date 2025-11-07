@@ -1,6 +1,5 @@
 using Azure.Storage.Blobs;
 using DotNet.Testcontainers.Builders;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using System.Text;
 using Testcontainers.Azurite;
 
@@ -111,20 +110,9 @@ public class AzuriteFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Creates a new container in the Azurite instance.
+    /// Helper method to upload a simple blob with text content and a specified content type.
     /// </summary>
-    /// <param name="containerName">The name of the container.</param>
-    /// <param name="metadata">Optional metadata for the container.</param>
-    public async Task<string> CreateContainerAsync(string containerName, IDictionary<string, string>? metadata = null)
-    {
-        await Client.CreateBlobContainerAsync(containerName, metadata: metadata);
-        return containerName;
-    }
-
-    /// <summary>
-    /// Helper method to upload a simple blob with text content.
-    /// </summary>
-    public async Task<string> CreateBlobAsync(string containerName, string blobName, string content)
+    public async Task<string> CreateBlobAsync(string containerName, string blobName, string content, string contentType = "text/plain")
     {
         var containerClient = Client.GetBlobContainerClient(containerName);
         var blobClient = containerClient.GetBlobClient(blobName);
@@ -134,10 +122,21 @@ public class AzuriteFixture : IAsyncLifetime
         {
             HttpHeaders = new Azure.Storage.Blobs.Models.BlobHttpHeaders
             {
-                ContentType = "text/plain"
+                ContentType = contentType
             }
         };
         await blobClient.UploadAsync(binaryData, blobOptions);
         return blobName;
+    }
+
+    /// <summary>
+    /// Creates a new container in the Azurite instance.
+    /// </summary>
+    /// <param name="containerName">The name of the container.</param>
+    /// <param name="metadata">Optional metadata for the container.</param>
+    public async Task<string> CreateContainerAsync(string containerName, IDictionary<string, string>? metadata = null)
+    {
+        await Client.CreateBlobContainerAsync(containerName, metadata: metadata);
+        return containerName;
     }
 }
