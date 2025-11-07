@@ -37,6 +37,18 @@ public partial class UploadsController : ODataController
         // Create a seekable stream from the request body
         using var memoryStream = new MemoryStream();
         await Request.Body.CopyToAsync(memoryStream, cancellationToken);
+
+        // If there is no data, return bad request
+        if (memoryStream.Length == 0)
+        {
+            Logger.LogWarning("UploadBlockAsync: No data provided in request body for uploadId '{uploadId}', blockId '{blockId}'", uploadId, blockId);
+            return Problem(
+                detail: "No data provided in request body.",
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request"
+            );
+        }
+
         memoryStream.Seek(0, SeekOrigin.Begin);
         
         // The repository will handle validation and pass-through to Azurite

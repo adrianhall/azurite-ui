@@ -6,19 +6,18 @@ using Microsoft.Net.Http.Headers;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic DELETE Tests
 
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithExistingBlob_ShouldReturnNoContent()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.DeleteAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -32,14 +31,13 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithMultipleBlobs_ShouldDeleteOnlySpecifiedBlob()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blob1 = await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
-        var blob2 = await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
-        var blob3 = await fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blob1 = await Fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
+        var blob2 = await Fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
+        var blob3 = await Fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.DeleteAsync($"/api/containers/{containerName}/blobs/{blob2}");
@@ -48,7 +46,7 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Verify blob2 is deleted and others remain
-        await fixture.SynchronizeCacheAsync();
+        await Fixture.SynchronizeCacheAsync();
         var blob1Response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blob1}");
         blob1Response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -62,12 +60,11 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_IdempotentDeletion_ShouldReturnNoContentThenNotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act - Delete the first time
         var firstResponse = await client.DeleteAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -87,11 +84,10 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithNonExistentBlob_ShouldReturn404()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentBlob = "blob-that-does-not-exist.txt";
 
         // Act
@@ -104,10 +100,8 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithNonExistentContainer_ShouldReturn404()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist";
 
         // Act
@@ -120,11 +114,10 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithInvalidBlobName_ShouldReturn404()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act - Use a clearly invalid blob name
         var response = await client.DeleteAsync($"/api/containers/{containerName}/blobs/invalid-blob-!@#$");
@@ -140,12 +133,11 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithMatchingIfMatch_ShouldReturnNoContent()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag
         var getResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -164,12 +156,11 @@ public class StorageController_DeleteBlob_Tests(ServiceFixture fixture) : BaseAp
     [Fact(Timeout = 60000)]
     public async Task DeleteBlob_WithNonMatchingIfMatch_ShouldReturn412()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/containers/{containerName}/blobs/{blobName}");

@@ -7,7 +7,7 @@ using Microsoft.Net.Http.Headers;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic PUT Tests
 
@@ -15,10 +15,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithNewMetadata_ShouldReturnUpdatedContainer()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -48,15 +47,14 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithEmptyMetadata_ShouldClearMetadata()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
         var metadata = new Dictionary<string, string>
         {
             ["key1"] = "value1",
             ["key2"] = "value2"
         };
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container", metadata);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container", metadata);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -78,14 +76,13 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_ReplacingExistingMetadata_ShouldUpdateSuccessfully()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
         var originalMetadata = new Dictionary<string, string>
         {
             ["oldkey"] = "oldvalue"
         };
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container", originalMetadata);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container", originalMetadata);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -112,10 +109,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithoutContainerNameInBody_ShouldUseRouteParameter()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -141,10 +137,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithMatchingContainerNameInBody_ShouldUpdateSuccessfully()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -169,10 +164,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_MultipleUpdates_ShouldChangeETag()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // First update
         var dto1 = new UpdateContainerDTO
@@ -209,9 +203,7 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithNonExistentContainer_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist";
 
         var dto = new UpdateContainerDTO
@@ -234,10 +226,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithMismatchedContainerName_ShouldReturn400()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -261,9 +252,7 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithInvalidContainerName_ShouldReturn400()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -282,10 +271,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithNullBody_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.PutAsync($"/api/containers/{containerName}", null);
@@ -302,10 +290,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithMatchingIfMatch_ShouldReturnOk()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its ETag
         var getResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -340,10 +327,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_WithNonMatchingIfMatch_ShouldReturn412()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -378,10 +364,9 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
     public async Task UpdateContainer_ShouldBeReflectedInGetEndpoint()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateContainerDTO
         {
@@ -398,7 +383,7 @@ public class StorageController_UpdateContainer_Tests(ServiceFixture fixture) : B
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Synchronize cache
-        await fixture.SynchronizeCacheAsync();
+        await Fixture.SynchronizeCacheAsync();
 
         // Act - Get the container
         var getResponse = await client.GetAsync($"/api/containers/{containerName}");

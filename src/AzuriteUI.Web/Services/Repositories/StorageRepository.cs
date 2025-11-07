@@ -361,6 +361,12 @@ public class StorageRepository(
 
         // Update the cache database.
         var result = await context.UpsertBlobAsync(commitResult, upload.ContainerName, cancellationToken);
+
+        // Delete the upload session after a successful commit
+        context.Uploads.Remove(upload);
+        await context.SaveChangesAsync(cancellationToken);
+
+        // Return the resulting BlobDTO.
         return await Blobs.SingleAsync(b => b.ContainerName == upload.ContainerName && b.Name == upload.BlobName, cancellationToken);
     }
 

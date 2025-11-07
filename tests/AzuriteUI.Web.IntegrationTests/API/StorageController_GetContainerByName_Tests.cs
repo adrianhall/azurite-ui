@@ -6,7 +6,7 @@ using Microsoft.Net.Http.Headers;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic GET Tests
 
@@ -14,10 +14,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithExistingContainer_ShouldReturnContainer()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}");
@@ -36,13 +35,12 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithContainerContainingBlobs_ShouldIncludeBlobCount()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}");
@@ -59,15 +57,14 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithContainerWithMetadata_ShouldIncludeMetadata()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
         var metadata = new Dictionary<string, string>
         {
             ["key1"] = "value1",
             ["key2"] = "value2"
         };
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container", metadata);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container", metadata);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}");
@@ -88,9 +85,8 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithNonExistentContainer_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist-12345";
 
         // Act
@@ -104,9 +100,8 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithInvalidContainerName_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act - Use a clearly invalid container name
         var response = await client.GetAsync("/api/containers/invalid-container-!@#$");
@@ -123,10 +118,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithMatchingIfMatch_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its ETag
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -149,10 +143,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithNonMatchingIfMatch_ShouldReturn412()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}");
@@ -172,10 +165,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithMatchingIfNoneMatch_ShouldReturn304()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its ETag
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -197,10 +189,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithNonMatchingIfNoneMatch_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}");
@@ -222,10 +213,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithIfModifiedSinceBeforeLastModified_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -248,10 +238,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithIfModifiedSinceAfterLastModified_ShouldReturn304()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -277,10 +266,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithIfUnmodifiedSinceAfterLastModified_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -303,10 +291,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithIfUnmodifiedSinceBeforeLastModified_ShouldReturn412()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -331,10 +318,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithMatchingIfMatchAndIfUnmodifiedSince_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its ETag and LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -359,10 +345,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithMatchingIfNoneMatchAndIfModifiedSince_ShouldReturn304()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its ETag and LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -386,10 +371,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithIfMatchTakesPrecedenceOverIfUnmodifiedSince_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its ETag and LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");
@@ -413,10 +397,9 @@ public class StorageController_GetContainerByName_Tests(ServiceFixture fixture) 
     public async Task GetContainerByName_WithIfNoneMatchTakesPrecedenceOverIfModifiedSince_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the container first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}");

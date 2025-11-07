@@ -307,4 +307,146 @@ public class SystemExtensions_Tests
     }
 
     #endregion
+
+    #region ToDictionaryOrEmpty Tests
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithNull_ShouldReturnEmptyDictionary()
+    {
+        // Arrange
+        IDictionary<string, string>? dict = null;
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithEmptyDictionary_ShouldReturnSameDictionary()
+    {
+        // Arrange
+        IDictionary<string, string> dict = new Dictionary<string, string>();
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+
+        // Assert
+        result.Should().BeSameAs(dict);
+        result.Should().BeEmpty();
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithSingleItem_ShouldReturnSameDictionary()
+    {
+        // Arrange
+        IDictionary<string, string> dict = new Dictionary<string, string>
+        {
+            ["key1"] = "value1"
+        };
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+
+        // Assert
+        result.Should().BeSameAs(dict);
+        result.Should().HaveCount(1);
+        result.Should().ContainKey("key1").WhoseValue.Should().Be("value1");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithMultipleItems_ShouldReturnSameDictionary()
+    {
+        // Arrange
+        IDictionary<string, string> dict = new Dictionary<string, string>
+        {
+            ["key1"] = "value1",
+            ["key2"] = "value2",
+            ["key3"] = "value3"
+        };
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+
+        // Assert
+        result.Should().BeSameAs(dict);
+        result.Should().HaveCount(3);
+        result.Should().ContainKey("key1").WhoseValue.Should().Be("value1");
+        result.Should().ContainKey("key2").WhoseValue.Should().Be("value2");
+        result.Should().ContainKey("key3").WhoseValue.Should().Be("value3");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithNull_ShouldReturnNewInstance()
+    {
+        // Arrange
+        IDictionary<string, string>? dict = null;
+
+        // Act
+        var result1 = dict.ToDictionaryOrEmpty();
+        var result2 = dict.ToDictionaryOrEmpty();
+
+        // Assert
+        result1.Should().NotBeNull();
+        result2.Should().NotBeNull();
+        result1.Should().NotBeSameAs(result2);
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithNonNull_ReturnsAreModifiable()
+    {
+        // Arrange
+        IDictionary<string, string> dict = new Dictionary<string, string>
+        {
+            ["key1"] = "value1"
+        };
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+        result["key2"] = "value2";
+
+        // Assert
+        result.Should().HaveCount(2);
+        dict.Should().HaveCount(2); // Original should also be modified since it's the same instance
+        dict.Should().ContainKey("key2");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithNull_ReturnedDictionaryIsModifiable()
+    {
+        // Arrange
+        IDictionary<string, string>? dict = null;
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+        result["key1"] = "value1";
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.Should().ContainKey("key1").WhoseValue.Should().Be("value1");
+    }
+
+    [Fact(Timeout = 15000)]
+    public void ToDictionaryOrEmpty_WithEmptyStringValues_ShouldReturnSameDictionary()
+    {
+        // Arrange
+        IDictionary<string, string> dict = new Dictionary<string, string>
+        {
+            ["key1"] = "",
+            ["key2"] = string.Empty
+        };
+
+        // Act
+        var result = dict.ToDictionaryOrEmpty();
+
+        // Assert
+        result.Should().BeSameAs(dict);
+        result.Should().HaveCount(2);
+        result["key1"].Should().BeEmpty();
+        result["key2"].Should().BeEmpty();
+    }
+
+    #endregion
 }

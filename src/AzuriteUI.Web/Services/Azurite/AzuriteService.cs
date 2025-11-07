@@ -7,6 +7,7 @@ using AzuriteUI.Web.Services.Azurite.Exceptions;
 using AzuriteUI.Web.Services.Azurite.Models;
 using Microsoft.Net.Http.Headers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -475,10 +476,19 @@ public class AzuriteService : IAzuriteService
         {
             404 => new ResourceNotFoundException("The specified resource was not found.", ex) { ResourceName = resourceName },
             409 => new ResourceExistsException("The specified resource already exists.", ex) { ResourceName = resourceName },
-            416 => new RangeNotSatisfiableException("The specified range is not satisfiable.", ex) { ContentLength = ex.GetRawResponse()?.Headers.ContentLength },
+            416 => new RangeNotSatisfiableException("The specified range is not satisfiable.", ex) { ContentLength = GetContentLengthFromException(ex) },
             _ => new AzuriteServiceException("An error occurred while communicating with the Azurite service.", ex) { StatusCode = ex.Status },
         };
     }
+
+    /// <summary>
+    /// Retrieves the content length if available from the provided <see cref="RequestFailedException"/>.
+    /// </summary>
+    /// <param name="ex">The exception.</param>
+    /// <returns>The content length if available; otherwise, null.</returns>
+    [ExcludeFromCodeCoverage(Justification = "Simple helper method that is impossible to cover with unit tests.")]
+    private static int? GetContentLengthFromException(RequestFailedException ex)
+        => ex.GetRawResponse()?.Headers.ContentLength;
     
     /// <summary>
     /// Converts the provided default encryption scope and prevent override flag

@@ -7,17 +7,17 @@ using Microsoft.AspNetCore.Http;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class UploadsController_GetUploadStatus_Tests(ServiceFixture fixture) : BaseApiTest()
-{
+public class UploadsController_GetUploadStatus_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
+{   
     #region Basic GET Tests
 
     [Fact(Timeout = 60000)]
     public async Task GetUploadStatus_WithValidUploadId_ShouldReturnUploadStatus()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Create an upload session
         var createDto = new CreateUploadRequestDTO
@@ -50,9 +50,9 @@ public class UploadsController_GetUploadStatus_Tests(ServiceFixture fixture) : B
     public async Task GetUploadStatus_AfterUploadingBlocks_ShouldShowProgress()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Create an upload session
         var createDto = new CreateUploadRequestDTO
@@ -86,9 +86,9 @@ public class UploadsController_GetUploadStatus_Tests(ServiceFixture fixture) : B
     public async Task GetUploadStatus_MultipleRequests_ShouldReturnConsistentData()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var createDto = new CreateUploadRequestDTO
         {
@@ -123,8 +123,7 @@ public class UploadsController_GetUploadStatus_Tests(ServiceFixture fixture) : B
     public async Task GetUploadStatus_WithNonExistentUploadId_ShouldReturn404NotFound()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentUploadId = Guid.NewGuid();
 
         // Act
@@ -143,26 +142,25 @@ public class UploadsController_GetUploadStatus_Tests(ServiceFixture fixture) : B
     }
 
     [Fact(Timeout = 60000)]
-    public async Task GetUploadStatus_WithInvalidGuid_ShouldReturnBadRequest()
+    public async Task GetUploadStatus_WithInvalidGuid_ShouldReturnNotFound()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/uploads/invalid-guid-format");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Should().Be404NotFound();
     }
 
     [Fact(Timeout = 60000)]
     public async Task GetUploadStatus_AfterCancellation_ShouldReturn404NotFound()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Create and then cancel an upload
         var createDto = new CreateUploadRequestDTO

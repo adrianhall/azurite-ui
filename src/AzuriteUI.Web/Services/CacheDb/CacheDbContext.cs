@@ -104,7 +104,7 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
             existing.ContentLanguage = blob.ContentLanguage;
             existing.ContentLength = blob.ContentLength;
             existing.ContentType = blob.ContentType;
-            existing.CreatedOn = blob.CreatedOn ?? DateTimeOffset.MinValue;
+            existing.CreatedOn = blob.CreatedOn.GetValueOrDefault(DateTimeOffset.MinValue);
             existing.ExpiresOn = blob.ExpiresOn;
             existing.LastAccessedOn = blob.LastAccessedOn;
             existing.Tags = blob.Tags;
@@ -129,7 +129,7 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
                 ContentLanguage = blob.ContentLanguage,
                 ContentLength = blob.ContentLength,
                 ContentType = blob.ContentType,
-                CreatedOn = blob.CreatedOn ?? DateTimeOffset.MinValue,
+                CreatedOn = blob.CreatedOn.GetValueOrDefault(DateTimeOffset.MinValue),
                 ExpiresOn = blob.ExpiresOn,
                 LastAccessedOn = blob.LastAccessedOn,
                 Tags = blob.Tags
@@ -199,7 +199,7 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
                 existing.ContentLanguage = blob.ContentLanguage;
                 existing.ContentLength = blob.ContentLength;
                 existing.ContentType = blob.ContentType;
-                existing.CreatedOn = blob.CreatedOn ?? DateTimeOffset.MinValue;
+                existing.CreatedOn = blob.CreatedOn.GetValueOrDefault(DateTimeOffset.MinValue);
                 existing.ExpiresOn = blob.ExpiresOn;
                 existing.LastAccessedOn = blob.LastAccessedOn;
                 existing.Tags = blob.Tags;
@@ -224,7 +224,7 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
                     ContentLanguage = blob.ContentLanguage,
                     ContentLength = blob.ContentLength,
                     ContentType = blob.ContentType,
-                    CreatedOn = blob.CreatedOn ?? DateTimeOffset.MinValue,
+                    CreatedOn = blob.CreatedOn.GetValueOrDefault(DateTimeOffset.MinValue),
                     ExpiresOn = blob.ExpiresOn,
                     LastAccessedOn = blob.LastAccessedOn,
                     Tags = blob.Tags

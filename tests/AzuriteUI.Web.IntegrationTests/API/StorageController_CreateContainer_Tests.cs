@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic POST Tests
 
@@ -15,8 +15,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithValidRequest_ShouldReturnCreatedContainer()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "test-container"
@@ -54,8 +53,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithMetadata_ShouldIncludeMetadata()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "container-with-metadata",
@@ -84,8 +82,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithPublicAccessBlob_ShouldSetPublicAccess()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "public-container",
@@ -106,8 +103,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithEmptyMetadata_ShouldCreateContainer()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "container-no-metadata",
@@ -132,9 +128,8 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WhenContainerAlreadyExists_ShouldReturn409Conflict()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("existing-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("existing-container");
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = containerName
@@ -159,8 +154,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithInvalidContainerName_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "Invalid_Container_Name!"  // Invalid characters
@@ -177,8 +171,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithEmptyContainerName_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = ""
@@ -195,9 +188,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithInvalidPublicAccess_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
-
+        using HttpClient client = Fixture.CreateClient();
         var json = """
         {
             "containerName": "test-container",
@@ -217,8 +208,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithNullBody_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.PostAsync("/api/containers", null);
@@ -235,8 +225,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithVeryLongContainerName_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = new string('a', 64)  // Container names max out at 63 characters
@@ -253,8 +242,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithValidMinimalName_ShouldCreateContainer()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "abc"  // 3 characters is minimum
@@ -274,8 +262,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_WithHyphenatedName_ShouldCreateContainer()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "test-container-with-hyphens"
@@ -299,8 +286,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
     public async Task CreateContainer_ShouldBeAccessibleViaGetEndpoint()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateContainerDTO
         {
             ContainerName = "new-container",
@@ -315,7 +301,7 @@ public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : B
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
         // Synchronize cache
-        await fixture.SynchronizeCacheAsync();
+        await Fixture.SynchronizeCacheAsync();
 
         // Act - Get the container
         var getResponse = await client.GetAsync("/api/containers/new-container");

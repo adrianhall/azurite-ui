@@ -31,7 +31,7 @@ public class DtoHeaderFilter(ILogger<DtoHeaderFilter> logger) : IResultFilter
             return;
         }
 
-        logger.LogDebug("Adding DTO conditional and link headers for endpoint response {endpoint}", context.HttpContext.GetEndpoint()?.DisplayName);
+        logger.LogDebug("Adding DTO conditional and link headers for endpoint response {endpoint}", GetDisplayName(context.HttpContext.GetEndpoint()));
         AddETagHeader(context.HttpContext, dto);
         AddLastModifiedHeader(context.HttpContext, dto);
     }
@@ -43,6 +43,16 @@ public class DtoHeaderFilter(ILogger<DtoHeaderFilter> logger) : IResultFilter
     public void OnResultExecuted(ResultExecutedContext context)
     {
         // No-op - we only need OnResultExecuting
+    }
+
+    /// <summary>
+    /// Gets the display name of the endpoint from the HTTP context.
+    /// </summary>
+    /// <param name="endpoint">The Endpoint reference.</param>
+    /// <returns>A string version of the endpoint's display name.</returns>
+    public string GetDisplayName(Endpoint? endpoint)
+    {
+        return string.IsNullOrEmpty(endpoint?.DisplayName) ? "<null>" : endpoint.DisplayName;
     }
 
     /// <summary>

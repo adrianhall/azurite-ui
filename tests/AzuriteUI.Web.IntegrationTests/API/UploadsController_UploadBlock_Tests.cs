@@ -10,25 +10,24 @@ using Microsoft.AspNetCore.Http;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseApiTest()
+public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic PUT Tests
 
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithValidBlock_ShouldSucceed()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
         var blockData = new byte[512];
         new Random().NextBytes(blockData);
         var content = new ByteArrayContent(blockData);
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
         // Act
         var response = await client.PutAsync($"/api/uploads/{uploadId}/blocks/{blockId}", content);
@@ -45,11 +44,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_MultipleBlocks_ShouldSucceed()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 2048);
 
@@ -82,11 +80,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithContentMD5Header_ShouldSucceed()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
@@ -108,11 +105,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_ReuploadingSameBlockId_ShouldSucceedIdempotently()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
@@ -141,11 +137,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithLargeBlock_ShouldSucceed()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 5 * 1024 * 1024);
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("largeblock"));
@@ -167,9 +162,8 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithNonExistentUploadId_ShouldReturn404NotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = Guid.NewGuid();
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
@@ -195,11 +189,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithInvalidBlockId_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
         var invalidBlockId = "not-base64-encoded!!!";
@@ -217,11 +210,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithEmptyContent_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
@@ -238,9 +230,8 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_WithInvalidGuidFormat_ShouldReturn404NotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        using HttpClient client = Fixture.CreateClient();
 
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
         var blockData = new byte[256];
@@ -257,11 +248,10 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
     [Fact(Timeout = 60000)]
     public async Task UploadBlock_AfterUploadCancelled_ShouldReturn404NotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
         await client.DeleteAsync($"/api/uploads/{uploadId}");
@@ -269,7 +259,7 @@ public class UploadsController_UploadBlock_Tests(ServiceFixture fixture) : BaseA
         var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
         var blockData = new byte[256];
         var content = new ByteArrayContent(blockData);
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
         // Act
         var response = await client.PutAsync($"/api/uploads/{uploadId}/blocks/{blockId}", content);

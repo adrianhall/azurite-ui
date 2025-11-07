@@ -7,7 +7,7 @@ using Microsoft.Net.Http.Headers;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic Download Tests
 
@@ -15,12 +15,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithExistingBlob_ShouldReturn200AndContent()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "This is test content for the blob.";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}/content");
@@ -45,12 +44,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithDispositionQueryParam_ShouldSetContentDispositionHeader(string disposition)
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}/content?disposition={disposition}");
@@ -66,12 +64,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithoutDisposition_ShouldNotSetContentDispositionHeader()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}/content");
@@ -85,12 +82,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithDispositionCaseInsensitive_ShouldAccept()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}/content?disposition=ATTACHMENT");
@@ -109,12 +105,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithValidRangeHeader_ShouldReturn206PartialContent()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789ABCDEFGHIJ";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}/blobs/{blobName}/content");
@@ -134,12 +129,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithRangeFromMiddle_ShouldReturn206WithCorrectContent()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789ABCDEFGHIJ";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}/blobs/{blobName}/content");
@@ -158,12 +152,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithRangeToEnd_ShouldReturn206WithCorrectContent()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789ABCDEFGHIJ";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}/blobs/{blobName}/content");
@@ -185,12 +178,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithInvalidDisposition_ShouldReturn400()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "Test content";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}/content?disposition=invalid");
@@ -207,10 +199,9 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithNonExistentBlob_ShouldReturn404WithProblemDetails()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentBlob = "blob-that-does-not-exist-12345.txt";
 
         // Act
@@ -234,9 +225,7 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithNonExistentContainer_ShouldReturn404WithProblemDetails()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist-12345";
 
         // Act
@@ -259,12 +248,11 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
     public async Task DownloadBlob_WithInvalidRangeHeader_ShouldReturn416WithProblemDetails()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         var blobContent = "0123456789";
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", blobContent);
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act - Request range beyond the blob size
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}/blobs/{blobName}/content");

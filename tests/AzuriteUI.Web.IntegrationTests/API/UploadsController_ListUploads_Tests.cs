@@ -7,36 +7,15 @@ using AzuriteUI.Web.Services.Repositories.Models;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseApiTest(), IAsyncLifetime
+public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {   
-    #region IAsyncLifetime Implementation
-    /// <inheritdoc/>
-    /// <remarks> 
-    /// This method is called before each test is run.  It cleans up the Azurite storage
-    /// and cache database to ensure a fresh state for each test.
-    /// </remarks>
-    public async ValueTask InitializeAsync()
-    {
-        await fixture.CleanupAsync();
-    }
-
-    /// <summary>
-    /// Part of <see cref="IAsyncLifetime"/>
-    /// </summary>
-    public ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        return ValueTask.CompletedTask;
-    }
-    #endregion
-
-    #region Basic GET Tests
+        #region Basic GET Tests
 
     [Fact(Timeout = 60000)]
     public async Task ListUploads_WithNoUploads_ShouldReturnEmptyList()
     {
         // Arrange
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/uploads");
@@ -54,9 +33,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithMultipleUploads_ShouldReturnAllUploads()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId1 = await CreateUploadSessionAsync(client, containerName, "blob1.txt", 1024);
         var uploadId2 = await CreateUploadSessionAsync(client, containerName, "blob2.txt", 2048);
@@ -83,9 +62,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithProgressTracking_ShouldShowProgress()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1000);
 
@@ -117,10 +96,10 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithFilterByContainerName_ShouldReturnMatchingUploads()
     {
         // Arrange
-        var container1 = await fixture.Azurite.CreateContainerAsync("container1");
-        var container2 = await fixture.Azurite.CreateContainerAsync("container2");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var container1 = await Fixture.Azurite.CreateContainerAsync("container1");
+        var container2 = await Fixture.Azurite.CreateContainerAsync("container2");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         await CreateUploadSessionAsync(client, container1, "blob1.txt", 1024);
         await CreateUploadSessionAsync(client, container2, "blob2.txt", 1024);
@@ -141,9 +120,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithTopParameter_ShouldLimitResults()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         await CreateUploadSessionAsync(client, containerName, "blob1.txt", 1024);
         await CreateUploadSessionAsync(client, containerName, "blob2.txt", 1024);
@@ -166,9 +145,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithSkipParameter_ShouldSkipResults()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         await CreateUploadSessionAsync(client, containerName, "blob1.txt", 1024);
         await CreateUploadSessionAsync(client, containerName, "blob2.txt", 1024);
@@ -189,9 +168,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithOrderByName_ShouldReturnOrderedResults()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         await CreateUploadSessionAsync(client, containerName, "charlie.txt", 1024);
         await CreateUploadSessionAsync(client, containerName, "alpha.txt", 1024);
@@ -213,9 +192,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithSelectParameter_ShouldReturnOnlySelectedFields()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
 
@@ -233,7 +212,7 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithInvalidFilter_ShouldReturnBadRequest()
     {
         // Arrange
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/uploads?$filter=invalid syntax here");
@@ -250,9 +229,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_WithPagination_ShouldProvideNextAndPrevLinks()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Create enough uploads to require pagination
         for (int i = 0; i < 30; i++)
@@ -291,9 +270,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_AfterCancellingUpload_ShouldNotShowCancelledUpload()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId1 = await CreateUploadSessionAsync(client, containerName, "blob1.txt", 1024);
         var uploadId2 = await CreateUploadSessionAsync(client, containerName, "blob2.txt", 1024);
@@ -316,9 +295,9 @@ public class UploadsController_ListUploads_Tests(ServiceFixture fixture) : BaseA
     public async Task ListUploads_AfterCommittingUpload_ShouldNotShowCommittedUpload()
     {
         // Arrange
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId1 = await CreateUploadSessionAsync(client, containerName, "blob1.txt", 512);
         var uploadId2 = await CreateUploadSessionAsync(client, containerName, "blob2.txt", 1024);

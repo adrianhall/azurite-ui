@@ -17,6 +17,19 @@ The API tests are placed in the `tests/AzuriteUI.Web.IntegrationTests` project, 
 * **DO NOT USE Moq or FluentAssertions** - these are forbidden libraries due to licensing.
 * Do not test log messages.
 
+## Class Inheritence
+
+A typical API test class looks like this:
+
+```csharp
+public class StorageController_CreateContainer_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
+{
+  // Tests
+}
+```
+
+The `BaseApiTest` cleans up the cache database and the Azurite instance before the test starts, resulting in a clean setup.
+
 ## The ServiceAppFactory and ServiceFixture
 
 The `ServiceFixture` and `ServiceAppFactory` classes are in the `Helpers` directory.  They create a `WebApplicationFactory` for the entire
@@ -30,6 +43,8 @@ await syncService.SynchronizeCacheAsync(cancellationToken);
 ```
 
 The `ServiceFixture` has a number of helper methods to assist with running tests.
+
+The `ServiceFixture.JsonOptions` is the set of JSON Serilizer options to use for deserializing content from the serve.
 
 ### AzuriteFixture
 

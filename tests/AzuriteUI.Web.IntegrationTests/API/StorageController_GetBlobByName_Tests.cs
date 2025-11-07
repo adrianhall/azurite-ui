@@ -6,7 +6,7 @@ using Microsoft.Net.Http.Headers;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic GET Tests
 
@@ -14,11 +14,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithExistingBlob_ShouldReturnBlob()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -39,11 +38,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithBlobWithMetadata_ShouldIncludeMetadata()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -64,10 +62,9 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithNonExistentBlob_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentBlob = "blob-that-does-not-exist-12345.txt";
 
         // Act
@@ -81,9 +78,8 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithNonExistentContainer_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist-12345";
 
         // Act
@@ -97,10 +93,9 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithInvalidBlobName_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act - Use a clearly invalid blob name
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs/invalid-blob-!@#$");
@@ -117,11 +112,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithMatchingIfMatch_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -144,11 +138,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithNonMatchingIfMatch_ShouldReturn412()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}/blobs/{blobName}");
@@ -168,11 +161,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithMatchingIfNoneMatch_ShouldReturn304()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -194,11 +186,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithNonMatchingIfNoneMatch_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"/api/containers/{containerName}/blobs/{blobName}");
@@ -220,11 +211,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithIfModifiedSinceBeforeLastModified_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -247,11 +237,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithIfModifiedSinceAfterLastModified_ShouldReturn304()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -277,11 +266,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithIfUnmodifiedSinceAfterLastModified_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -304,11 +292,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithIfUnmodifiedSinceBeforeLastModified_ShouldReturn412()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -333,11 +320,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithMatchingIfMatchAndIfUnmodifiedSince_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag and LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -362,11 +348,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithMatchingIfNoneMatchAndIfModifiedSince_ShouldReturn304()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag and LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -390,11 +375,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithIfMatchTakesPrecedenceOverIfUnmodifiedSince_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag and LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -418,11 +402,10 @@ public class StorageController_GetBlobByName_Tests(ServiceFixture fixture) : Bas
     public async Task GetBlobByName_WithIfNoneMatchTakesPrecedenceOverIfModifiedSince_ShouldReturn200()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its LastModified
         var initialResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");

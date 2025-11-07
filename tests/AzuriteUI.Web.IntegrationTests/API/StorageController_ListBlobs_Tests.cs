@@ -6,7 +6,7 @@ using AzuriteUI.Web.Controllers.Models;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic GET Tests
 
@@ -14,10 +14,9 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithNoBlobs_ShouldReturnEmptyList()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs");
@@ -37,13 +36,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithMultipleBlobs_ShouldReturnAllBlobs()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob3.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs");
@@ -64,10 +62,9 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithEmptyContainer_ShouldReturnEmptyList()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("empty-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("empty-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs");
@@ -85,9 +82,8 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithNonExistentContainer_ShouldReturnEmptyList()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers/non-existent-container/blobs");
@@ -109,14 +105,13 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithTopParameter_ShouldLimitResults()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         for (int i = 1; i <= 10; i++)
         {
-            await fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
+            await Fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
         }
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$top=5");
@@ -136,14 +131,13 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithSkipAndTop_ShouldReturnCorrectPage()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         for (int i = 1; i <= 10; i++)
         {
-            await fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
+            await Fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
         }
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$skip=3&$top=4");
@@ -163,12 +157,11 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithSkipBeyondResults_ShouldReturnEmptyList()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob1.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "blob2.txt", "content2");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$skip=10");
@@ -188,14 +181,13 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_OnLastPage_ShouldNotHaveNextLink()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
         for (int i = 1; i <= 10; i++)
         {
-            await fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
+            await Fixture.Azurite.CreateBlobAsync(containerName, $"blob{i:D2}.txt", $"content{i}");
         }
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$skip=8&$top=5");
@@ -217,13 +209,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithFilterByName_ShouldReturnMatchingBlobs()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-file.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "prod-file.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-data.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-file.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "prod-file.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-data.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=startswith(name,'test')");
@@ -242,13 +233,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithFilterByContentType_ShouldReturnMatchingBlobs()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "file1.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "file2.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "file3.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "file1.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "file2.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "file3.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=contentType eq 'text/plain'");
@@ -266,13 +256,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithComplexFilter_ShouldReturnMatchingBlobs()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-small.txt", "hi");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-large.txt", "this is a longer content string");
-        await fixture.Azurite.CreateBlobAsync(containerName, "prod-small.txt", "hi");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-small.txt", "hi");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-large.txt", "this is a longer content string");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "prod-small.txt", "hi");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=startswith(name,'test') and contentLength gt 5");
@@ -293,13 +282,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithOrderByName_ShouldReturnOrderedResults()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=name");
@@ -319,13 +307,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithOrderByNameDescending_ShouldReturnDescendingResults()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=name desc");
@@ -345,13 +332,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithOrderByContentLength_ShouldReturnOrderedBySize()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "small.txt", "hi");
-        await fixture.Azurite.CreateBlobAsync(containerName, "large.txt", "this is a much longer content string");
-        await fixture.Azurite.CreateBlobAsync(containerName, "medium.txt", "medium content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "small.txt", "hi");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "large.txt", "this is a much longer content string");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "medium.txt", "medium content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=contentLength desc");
@@ -374,11 +360,10 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithSelectName_ShouldReturnOnlyNameProperty()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$select=name");
@@ -399,11 +384,10 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithSelectMultipleProperties_ShouldReturnOnlySelectedProperties()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$select=name,contentLength");
@@ -427,9 +411,8 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithInvalidFilter_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=invalid syntax here");
@@ -442,9 +425,8 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithTopTooLarge_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$top=1000");
@@ -457,9 +439,8 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithInvalidOrderBy_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$orderby=nonExistentProperty");
@@ -476,14 +457,13 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithFilterOrderAndPagination_ShouldApplyAllOptions()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-alpha.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-beta.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "test-gamma.txt", "content3");
-        await fixture.Azurite.CreateBlobAsync(containerName, "prod-alpha.txt", "content4");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-alpha.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-beta.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "test-gamma.txt", "content3");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "prod-alpha.txt", "content4");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$filter=startswith(name,'test')&$orderby=name&$skip=1&$top=1");
@@ -504,13 +484,12 @@ public class StorageController_ListBlobs_Tests(ServiceFixture fixture) : BaseApi
     public async Task ListBlobs_WithSelectFilterAndOrder_ShouldApplyAllOptions()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "zebra.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "alpha.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(containerName, "beta.txt", "content3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync($"/api/containers/{containerName}/blobs?$select=name&$orderby=name desc&$top=2");

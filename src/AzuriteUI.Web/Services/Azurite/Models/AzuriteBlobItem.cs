@@ -124,7 +124,7 @@ public class AzuriteBlobItem : AzuriteResourceItem
             LastAccessedOn = blobItem.Properties.LastAccessedOn,
             Metadata = blobItem.Metadata.ToDictionary(),
             RemainingRetentionDays = blobItem.Properties.RemainingRetentionDays,
-            Tags = blobItem.Tags?.ToDictionary() ?? []
+            Tags = blobItem.Tags.ToDictionaryOrEmpty()
         };
     }
 }

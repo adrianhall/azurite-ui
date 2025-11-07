@@ -5,7 +5,7 @@ namespace AzuriteUI.Web.IntegrationTests.API;
 /// to verify automatic header generation for DTO responses.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class TestDtoController_Tests(ServiceFixture fixture) : BaseApiTest()
+public class TestDtoController_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Single ContainerDTO Tests
 
@@ -13,7 +13,7 @@ public class TestDtoController_Tests(ServiceFixture fixture) : BaseApiTest()
     public async Task GetContainer_ReturnsContainerDTOWithAllHeaders()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/dto/container");
@@ -35,7 +35,7 @@ public class TestDtoController_Tests(ServiceFixture fixture) : BaseApiTest()
     public async Task GetBlob_ReturnsBlobDTOWithAllHeaders()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/dto/blob");
@@ -57,7 +57,7 @@ public class TestDtoController_Tests(ServiceFixture fixture) : BaseApiTest()
     public async Task GetContainers_PagedResponse_DoesNotHaveETagHeader()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/dto/containers");

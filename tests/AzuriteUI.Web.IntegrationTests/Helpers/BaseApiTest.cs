@@ -6,10 +6,54 @@ namespace AzuriteUI.Web.IntegrationTests.Helpers;
 /// <summary>
 /// Base class for API integration tests that provides common helper methods.
 /// </summary>
+/// <param name="serviceFixture">The service fixture.</param>
 [ExcludeFromCodeCoverage(Justification = "Test base class")]
-public abstract class BaseApiTest : IClassFixture<ServiceFixture>
+public abstract class BaseApiTest(ServiceFixture serviceFixture) : IClassFixture<ServiceFixture>, IAsyncLifetime
 {
+    /// <summary>
+    /// The service fixture to use.
+    /// </summary>
+    public ServiceFixture Fixture { get => serviceFixture; }
+
+    #region IAsyncLifetime Implementation
+    /// <inheritdoc/>
+    /// <remarks> 
+    /// This method is called before each test is run.  It cleans up the Azurite storage
+    /// and cache database to ensure a fresh state for each test.
+    /// </remarks>
+    public async ValueTask InitializeAsync()
+    {
+        await serviceFixture.CleanupAsync();
+    }
+
+    /// <summary>
+    /// Part of <see cref="IAsyncLifetime"/>
+    /// </summary>
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
+    }
+    #endregion
+
     #region Common Helper Methods
+    /// <summary>
+    /// Creates multiple containers in Azurite and optionally synchronizes the cache.
+    /// </summary>
+    /// <param name="containerNames">The container names to create.</param>
+    /// <param name="synchronize">If true, synchronize the cache.</param>
+    protected async Task CreateContainersAsync(IEnumerable<string> containerNames, bool synchronize = true)
+    {
+        foreach (var containerName in containerNames)
+        {
+            await Fixture.Azurite.CreateContainerAsync(containerName);
+        }
+
+        if (synchronize)
+        {
+            await Fixture.SynchronizeCacheAsync();
+        }
+    }
 
     /// <summary>
     /// Ensures an ETag is properly quoted for HTTP headers.

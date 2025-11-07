@@ -6,7 +6,7 @@ using Microsoft.Net.Http.Headers;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic PUT Tests
 
@@ -14,11 +14,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithNewMetadata_ShouldReturnUpdatedBlob()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -50,11 +49,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithNewTags_ShouldReturnUpdatedBlob()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -84,11 +82,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithEmptyMetadata_ShouldClearMetadata()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -111,11 +108,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithoutContainerAndBlobNameInBody_ShouldUseRouteParameters()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -143,11 +139,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithMatchingNamesInBody_ShouldUpdateSuccessfully()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -174,11 +169,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_MultipleUpdates_ShouldChangeETag()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // First update
         var dto1 = new UpdateBlobDTO
@@ -213,11 +207,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithMetadataAndTags_ShouldUpdateBoth()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -252,10 +245,9 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithNonExistentBlob_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentBlob = "blob-that-does-not-exist.txt";
 
         var dto = new UpdateBlobDTO
@@ -279,9 +271,8 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithNonExistentContainer_ShouldReturn404()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var nonExistentContainer = "container-that-does-not-exist";
 
         var dto = new UpdateBlobDTO
@@ -302,11 +293,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithMismatchedContainerName_ShouldReturn400()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -328,11 +318,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithMismatchedBlobName_ShouldReturn400()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -354,10 +343,9 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithInvalidBlobName_ShouldReturn400()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -377,11 +365,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithNullBody_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.PutAsync($"/api/containers/{containerName}/blobs/{blobName}", null);
@@ -398,11 +385,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithMatchingIfMatch_ShouldReturnOk()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Get the blob first to obtain its ETag
         var getResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");
@@ -438,11 +424,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_WithNonMatchingIfMatch_ShouldReturn412()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -478,11 +463,10 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
     public async Task UpdateBlob_ShouldBeReflectedInGetEndpoint()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "test-blob.txt", "test content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var dto = new UpdateBlobDTO
         {
@@ -504,7 +488,7 @@ public class StorageController_UpdateBlob_Tests(ServiceFixture fixture) : BaseAp
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Synchronize cache
-        await fixture.SynchronizeCacheAsync();
+        await Fixture.SynchronizeCacheAsync();
 
         // Act - Get the blob
         var getResponse = await client.GetAsync($"/api/containers/{containerName}/blobs/{blobName}");

@@ -7,18 +7,18 @@ using Microsoft.AspNetCore.Http;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
+    private const string containerName = "test-container";
+
     #region Basic POST Tests
 
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithValidRequest_ShouldReturnCreatedUploadSession()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await CreateContainersAsync([containerName]);        
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "test-blob.txt",
@@ -61,11 +61,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithMetadata_ShouldIncludeMetadata()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "blob-with-metadata.txt",
@@ -92,11 +91,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithTags_ShouldIncludeTags()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "blob-with-tags.txt",
@@ -123,11 +121,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithContentEncoding_ShouldAcceptEncoding()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "compressed.gz",
@@ -150,11 +147,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithLargeContentLength_ShouldAcceptUpTo10GB()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "large-file.bin",
@@ -180,9 +176,8 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WhenContainerDoesNotExist_ShouldReturn404NotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        using HttpClient client = Fixture.CreateClient();
         var containerName = "non-existent-container";
         var dto = new CreateUploadRequestDTO
         {
@@ -210,12 +205,11 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WhenBlobAlreadyExists_ShouldReturn409Conflict()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        var blobName = await fixture.Azurite.CreateBlobAsync(containerName, "existing-blob.txt", "existing content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        var blobName = await Fixture.Azurite.CreateBlobAsync(containerName, "existing-blob.txt", "existing content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = blobName,
@@ -242,11 +236,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WhenContainerNameMismatch_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "test-blob.txt",
@@ -265,11 +258,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithZeroContentLength_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "test-blob.txt",
@@ -288,11 +280,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithExcessiveContentLength_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "test-blob.txt",
@@ -311,11 +302,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithEmptyBlobName_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
         var dto = new CreateUploadRequestDTO
         {
             BlobName = "",
@@ -334,11 +324,10 @@ public class StorageController_CreateUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CreateUpload_WithNullBody_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.PostAsync($"/api/containers/{containerName}/blobs", null);

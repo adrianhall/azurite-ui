@@ -11,7 +11,7 @@ namespace AzuriteUI.Web.IntegrationTests.API;
 /// to simulate various exception scenarios.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest()
+public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region 404 Not Found Tests
 
@@ -19,7 +19,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_404_Returns404WithProblemDetails()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/not-found");
@@ -43,7 +43,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_404_IncludesResourceNameInExtensions()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/not-found");
@@ -62,7 +62,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_404_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/not-found");
@@ -86,7 +86,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_409_Returns409WithProblemDetails()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/conflict");
@@ -110,7 +110,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_409_IncludesResourceNameInExtensions()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/conflict");
@@ -129,7 +129,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_409_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/conflict");
@@ -153,7 +153,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_416_Returns416WithProblemDetails()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/range-not-satisfiable");
@@ -176,7 +176,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_416_DoesNotIncludeResourceName()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/range-not-satisfiable");
@@ -195,7 +195,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_416_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/range-not-satisfiable");
@@ -219,7 +219,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_503_Returns503WithProblemDetails()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/service-unavailable");
@@ -242,7 +242,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_503_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/service-unavailable");
@@ -266,7 +266,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_502_Returns502WithProblemDetails()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/bad-gateway");
@@ -289,7 +289,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestException_502_ReturnsValidProblemDetailsStructure()
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/test/exceptions/bad-gateway");
@@ -318,7 +318,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestExceptions_AllEndpoints_ReturnCorrectStatusCodes(string endpoint, HttpStatusCode expectedStatus)
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
@@ -336,7 +336,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestExceptions_AllEndpoints_ReturnProblemDetailsContentType(string endpoint)
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
@@ -354,7 +354,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
     public async Task TestExceptions_AllEndpoints_ReturnValidJson(string endpoint)
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);
@@ -376,7 +376,7 @@ public class TestExceptionController_Tests(ServiceFixture fixture) : BaseApiTest
         bool shouldExist)
     {
         // Arrange
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync(endpoint);

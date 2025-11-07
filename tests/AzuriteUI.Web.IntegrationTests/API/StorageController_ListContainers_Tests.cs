@@ -6,7 +6,7 @@ using AzuriteUI.Web.Controllers.Models;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class StorageController_ListContainers_Tests(ServiceFixture fixture) : BaseApiTest()
+public class StorageController_ListContainers_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic GET Tests
 
@@ -14,9 +14,7 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithNoContainers_ShouldReturnEmptyList()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers");
@@ -36,12 +34,11 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithMultipleContainers_ShouldReturnAllContainers()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("container1");
-        await fixture.Azurite.CreateContainerAsync("container2");
-        await fixture.Azurite.CreateContainerAsync("container3");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("container1");
+        await Fixture.Azurite.CreateContainerAsync("container2");
+        await Fixture.Azurite.CreateContainerAsync("container3");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers");
@@ -66,13 +63,12 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithTopParameter_ShouldLimitResults()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
         for (int i = 1; i <= 10; i++)
         {
-            await fixture.Azurite.CreateContainerAsync($"container{i:D2}");
+            await Fixture.Azurite.CreateContainerAsync($"container{i:D2}");
         }
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$top=5");
@@ -92,13 +88,12 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithSkipAndTop_ShouldReturnCorrectPage()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
         for (int i = 1; i <= 10; i++)
         {
-            await fixture.Azurite.CreateContainerAsync($"container{i:D2}");
+            await Fixture.Azurite.CreateContainerAsync($"container{i:D2}");
         }
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$skip=3&$top=4");
@@ -118,11 +113,10 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithSkipBeyondResults_ShouldReturnEmptyList()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("container1");
-        await fixture.Azurite.CreateContainerAsync("container2");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("container1");
+        await Fixture.Azurite.CreateContainerAsync("container2");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$skip=10");
@@ -142,13 +136,12 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_OnLastPage_ShouldNotHaveNextLink()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
         for (int i = 1; i <= 10; i++)
         {
-            await fixture.Azurite.CreateContainerAsync($"container{i:D2}");
+            await Fixture.Azurite.CreateContainerAsync($"container{i:D2}");
         }
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$skip=8&$top=5");
@@ -170,12 +163,11 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithFilterByName_ShouldReturnMatchingContainers()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateContainerAsync("prod-container");
-        await fixture.Azurite.CreateContainerAsync("test-data");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateContainerAsync("prod-container");
+        await Fixture.Azurite.CreateContainerAsync("test-data");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$filter=startswith(name,'test')");
@@ -194,13 +186,12 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithFilterByBlobCount_ShouldReturnMatchingContainers()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("empty-container");
-        var containerWithBlobs = await fixture.Azurite.CreateContainerAsync("container-with-blobs");
-        await fixture.Azurite.CreateBlobAsync(containerWithBlobs, "blob1.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(containerWithBlobs, "blob2.txt", "content2");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("empty-container");
+        var containerWithBlobs = await Fixture.Azurite.CreateContainerAsync("container-with-blobs");
+        await Fixture.Azurite.CreateBlobAsync(containerWithBlobs, "blob1.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(containerWithBlobs, "blob2.txt", "content2");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$filter=blobCount gt 0");
@@ -218,13 +209,12 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithComplexFilter_ShouldReturnMatchingContainers()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.Azurite.CreateContainerAsync("prod-container");
-        var testData = await fixture.Azurite.CreateContainerAsync("test-data");
-        await fixture.Azurite.CreateBlobAsync(testData, "file.txt", "content");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.Azurite.CreateContainerAsync("prod-container");
+        var testData = await Fixture.Azurite.CreateContainerAsync("test-data");
+        await Fixture.Azurite.CreateBlobAsync(testData, "file.txt", "content");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$filter=startswith(name,'test') and blobCount gt 0");
@@ -245,12 +235,11 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithOrderByName_ShouldReturnOrderedResults()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("zebra");
-        await fixture.Azurite.CreateContainerAsync("alpha");
-        await fixture.Azurite.CreateContainerAsync("beta");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("zebra");
+        await Fixture.Azurite.CreateContainerAsync("alpha");
+        await Fixture.Azurite.CreateContainerAsync("beta");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$orderby=name");
@@ -270,12 +259,11 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithOrderByNameDescending_ShouldReturnDescendingResults()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("zebra");
-        await fixture.Azurite.CreateContainerAsync("alpha");
-        await fixture.Azurite.CreateContainerAsync("beta");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("zebra");
+        await Fixture.Azurite.CreateContainerAsync("alpha");
+        await Fixture.Azurite.CreateContainerAsync("beta");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$orderby=name desc");
@@ -295,15 +283,14 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithOrderByBlobCount_ShouldReturnOrderedByCount()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var container1 = await fixture.Azurite.CreateContainerAsync("container1");
-        var container2 = await fixture.Azurite.CreateContainerAsync("container2");
-        var container3 = await fixture.Azurite.CreateContainerAsync("container3");
-        await fixture.Azurite.CreateBlobAsync(container2, "blob1.txt", "content1");
-        await fixture.Azurite.CreateBlobAsync(container2, "blob2.txt", "content2");
-        await fixture.Azurite.CreateBlobAsync(container3, "blob1.txt", "content1");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        var container1 = await Fixture.Azurite.CreateContainerAsync("container1");
+        var container2 = await Fixture.Azurite.CreateContainerAsync("container2");
+        var container3 = await Fixture.Azurite.CreateContainerAsync("container3");
+        await Fixture.Azurite.CreateBlobAsync(container2, "blob1.txt", "content1");
+        await Fixture.Azurite.CreateBlobAsync(container2, "blob2.txt", "content2");
+        await Fixture.Azurite.CreateBlobAsync(container3, "blob1.txt", "content1");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$orderby=blobCount desc");
@@ -326,10 +313,9 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithSelectName_ShouldReturnOnlyNameProperty()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$select=name");
@@ -349,10 +335,9 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithSelectMultipleProperties_ShouldReturnOnlySelectedProperties()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$select=name,blobCount");
@@ -376,8 +361,7 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithInvalidFilter_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$filter=invalid syntax here");
@@ -390,8 +374,7 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithTopTooLarge_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$top=1000");
@@ -404,8 +387,7 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithInvalidOrderBy_ShouldReturnBadRequest()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$orderby=nonExistentProperty");
@@ -422,13 +404,12 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithFilterOrderAndPagination_ShouldApplyAllOptions()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("test-alpha");
-        await fixture.Azurite.CreateContainerAsync("test-beta");
-        await fixture.Azurite.CreateContainerAsync("test-gamma");
-        await fixture.Azurite.CreateContainerAsync("prod-alpha");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("test-alpha");
+        await Fixture.Azurite.CreateContainerAsync("test-beta");
+        await Fixture.Azurite.CreateContainerAsync("test-gamma");
+        await Fixture.Azurite.CreateContainerAsync("prod-alpha");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$filter=startswith(name,'test')&$orderby=name&$skip=1&$top=1");
@@ -449,12 +430,11 @@ public class StorageController_ListContainers_Tests(ServiceFixture fixture) : Ba
     public async Task ListContainers_WithSelectFilterAndOrder_ShouldApplyAllOptions()
     {
         // Arrange
-        await fixture.Azurite.CleanupAsync();
-        await fixture.Azurite.CreateContainerAsync("zebra");
-        await fixture.Azurite.CreateContainerAsync("alpha");
-        await fixture.Azurite.CreateContainerAsync("beta");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        await Fixture.Azurite.CreateContainerAsync("zebra");
+        await Fixture.Azurite.CreateContainerAsync("alpha");
+        await Fixture.Azurite.CreateContainerAsync("beta");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         // Act
         var response = await client.GetAsync("/api/containers?$select=name&$orderby=name desc&$top=2");

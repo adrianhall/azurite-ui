@@ -29,4 +29,12 @@ public static class SystemExtensions
     /// <returns>The original value if it is not null or whitespace; otherwise, the default value.</returns>
     public static string OrDefault(this string? value, string defaultValue)
         => string.IsNullOrWhiteSpace(value) ? defaultValue : value;
+
+    /// <summary>
+    /// Converts a nullable dictionary to a non-nullable dictionary, returning an empty dictionary if null.
+    /// </summary>
+    /// <param name="dict">The dictionary</param>
+    /// <returns>The non-null dictionary.</returns>
+    public static IDictionary<string, string> ToDictionaryOrEmpty(this IDictionary<string, string>? dict)
+        => dict is not null ? dict : new Dictionary<string, string>();
 }

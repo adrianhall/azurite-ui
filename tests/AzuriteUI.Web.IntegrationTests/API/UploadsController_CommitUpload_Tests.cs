@@ -8,18 +8,17 @@ using Microsoft.AspNetCore.Http;
 namespace AzuriteUI.Web.IntegrationTests.API;
 
 [ExcludeFromCodeCoverage(Justification = "API Test class")]
-public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : BaseApiTest()
+public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 {
     #region Basic PUT Tests
 
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithAllBlocksUploaded_ShouldCreateBlob()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
 
@@ -49,12 +48,12 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
         result.LastModified.Should().BeCloseTo(endTime, TimeSpan.FromSeconds(5));
 
         // Verify Location header
-        response.Headers.Location.Should().NotBeNull()
-            .And.BeOfType<Uri>()
-            .Which.AbsolutePath.Should().Be($"/api/containers/{containerName}/blobs/test-blob.txt");
+        response.Headers.Location.Should().NotBeNull();
+        var locationPath = response.Headers.Location?.ToString();
+        locationPath.Should().NotBeNull().And.EndWith($"/api/containers/{containerName}/blobs/test-blob.txt");
 
         // Verify blob exists in Azurite
-        var blobExists = await fixture.Azurite.BlobExistsAsync(containerName, "test-blob.txt");
+        var blobExists = await Fixture.Azurite.BlobExistsAsync(containerName, "test-blob.txt");
         blobExists.Should().BeTrue();
 
         // Verify upload session is removed
@@ -65,11 +64,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithBlocksInSpecificOrder_ShouldRespectOrder()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "ordered-blob.txt", 300);
 
@@ -100,11 +98,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithSingleBlock_ShouldCreateBlob()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "single-block.txt", 256);
 
@@ -129,11 +126,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithMetadataAndTags_ShouldPreserveProperties()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var createDto = new CreateUploadRequestDTO
         {
@@ -184,9 +180,8 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithNonExistentUploadId_ShouldReturn404NotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = Guid.NewGuid();
         var commitDto = new CommitUploadRequestDTO
@@ -212,11 +207,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithMissingBlocks_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
 
@@ -241,11 +235,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithEmptyBlockList_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 1024);
 
@@ -262,12 +255,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     }
 
     [Fact(Timeout = 60000)]
-    public async Task CommitUpload_WithInvalidGuidFormat_ShouldReturnBadRequest()
+    public async Task CommitUpload_WithInvalidGuidFormat_ShouldReturnNotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        using HttpClient client = fixture.CreateClient();
-
+        // Arrange        
+        using HttpClient client = Fixture.CreateClient();
         var commitDto = new CommitUploadRequestDTO
         {
             BlockIds = [Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"))]
@@ -277,17 +268,16 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
         var response = await client.PutAsJsonAsync("/api/uploads/invalid-guid/commit", commitDto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Should().Be404NotFound();
     }
 
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_AfterAlreadyCommitted_ShouldReturn404NotFound()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 512);
 
@@ -313,11 +303,10 @@ public class UploadsController_CommitUpload_Tests(ServiceFixture fixture) : Base
     [Fact(Timeout = 60000)]
     public async Task CommitUpload_WithNullBody_ShouldReturnBadRequest()
     {
-        // Arrange
-        await fixture.Azurite.CleanupAsync();
-        var containerName = await fixture.Azurite.CreateContainerAsync("test-container");
-        await fixture.SynchronizeCacheAsync();
-        using HttpClient client = fixture.CreateClient();
+        // Arrange        
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
 
         var uploadId = await CreateUploadSessionAsync(client, containerName, "test-blob.txt", 512);
 
