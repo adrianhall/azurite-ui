@@ -890,3 +890,52 @@ This matches the `DashboardResponse` model, which includes:
 - `stats` (DashboardStats): Statistics including total container count, blob count, total blob size, and total image size
 - `recentContainers` (RecentContainerInfo[]): Up to 10 most recently modified containers, ordered by the most recent of either the container's last modified date or the last modified date of its most recent blob
 - `recentBlobs` (RecentBlobInfo[]): Up to 10 most recently modified blobs, ordered by last modified date descending
+
+## Action Endpoints
+
+The following endpoints handle background operations and system actions.
+
+### SyncCache: `POST /api/actions/sync-cache`
+
+Triggers a cache synchronization operation that updates the local cache database with the current state of Azure Storage. The operation is queued and executed asynchronously in the background.
+
+#### SyncCache Request
+
+**Query Parameters**:
+
+None.
+
+**Headers**:
+
+No additional request headers are supported.
+
+**Body**:
+
+No request body required.
+
+#### SyncCache Response
+
+**Status Codes**:
+
+* 202 Accepted
+
+**Response Headers**:
+
+* `Content-Type: application/json`
+
+**Body**:
+
+```json
+{
+    "id": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+This matches the `QueuedWork` model. The `id` field is a unique identifier (GUID) for the queued work item. This can be used to track the synchronization operation.
+
+**Notes**:
+
+- The queue manager ensures at most 1 cache synchronization operation is queued at any time (plus 1 currently executing)
+- If a synchronization is already queued when this endpoint is called, the existing queued work item will be returned instead of creating a new one
+- Multiple calls to this endpoint while work is queued will return the same work item ID
+- The cache synchronization queue does not automatically process work in the test environment; use `IQueueManager.StartQueueAsync()` to begin processing

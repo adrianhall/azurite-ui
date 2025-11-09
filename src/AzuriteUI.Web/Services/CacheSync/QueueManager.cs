@@ -91,7 +91,7 @@ public class QueueManager(IQueueWorker worker, ILogger<QueueManager> logger) : I
         try
         {
             // If we already have an item enqueued (not being executed), return it
-            if (_enqueuedItem != null)
+            if (_enqueuedItem is not null)
             {
                 _logger.LogDebug("Work already enqueued with ID {WorkId}. Returning existing work.", _enqueuedItem.Id);
                 return _enqueuedItem;

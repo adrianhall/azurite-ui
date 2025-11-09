@@ -1,5 +1,6 @@
 using AzuriteUI.Web.Services.CacheDb;
 using AzuriteUI.Web.Services.CacheSync;
+using AzuriteUI.Web.Services.CacheSync.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +52,14 @@ public class ServiceFixture : IAsyncLifetime
     /// The services.
     /// </summary>
     public IServiceProvider Services { get => Factory.Services; }
+
+    /// <summary>
+    /// Retrieves the cache sync queue from the queue manager.
+    /// </summary>
+    public List<QueuedWork> CacheSyncQueue
+    {
+        get => Factory.Services.GetRequiredService<IQueueManager>().QueuedItems;
+    }
 
     /// <summary>
     /// JSON serializer options that match the API configuration.
@@ -112,6 +121,15 @@ public class ServiceFixture : IAsyncLifetime
         var context = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
         await context.Database.ExecuteSqlRawAsync("DELETE FROM Containers");
         await context.Database.ExecuteSqlRawAsync("DELETE FROM Uploads");
+    }
+
+    /// <summary>
+    /// Clears the queue before each test to ensure a clean state.
+    /// </summary>
+    public async Task ClearCacheSyncQueueAsync()
+    {
+        var queueManager = Factory.Services.GetRequiredService<IQueueManager>();
+        await queueManager.ClearQueueAsync();
     }
 
     /// <summary>
