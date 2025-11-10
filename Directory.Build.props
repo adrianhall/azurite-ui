@@ -1,0 +1,31 @@
+<Project>
+    <PropertyGroup>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <ImplicitUsings>true</ImplicitUsings>
+        <LangVersion>latest</LangVersion>
+        <NeutralLanguage>en</NeutralLanguage>
+        <Nullable>enable</Nullable>
+        <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+        <TargetFramework>net10.0</TargetFramework>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Authors>Adrian Hall</Authors>
+        <Company>Adrian Hall</Company>
+        <Copyright>Copyright (c) 2025 Adrian Hall</Copyright>
+        <LicenseUrl>https://github.com/adrianhall/azurite-ui/blob/main/LICENSE.md</LicenseUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/adrianhall/azurite-ui</PackageProjectUrl>
+        <PackageTags>azurite;console</PackageTags>
+        <Product>$(AssemblyName) ($(TargetFramework))</Product>
+        <ProjectUrl>https://github.com/adrianhall/azurite-ui</ProjectUrl>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <RepositoryUrl>https://github.com/adrianhall/azurite-ui</RepositoryUrl>
+    </PropertyGroup>
+
+      <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)\README.md" PackagePath="README.md" Pack="True" />
+        <None Include="$(MSBuildThisFileDirectory)\LICENSE.md" PackagePath="LICENSE.md" Pack="True" />
+    </ItemGroup>
+</Project>
