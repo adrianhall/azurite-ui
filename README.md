@@ -144,18 +144,6 @@ After running tests, coverage reports are available in multiple formats:
 - **docs/** - Additional documentation
 - **artifacts/** - Build outputs, test results, and coverage reports (generated)
 
-### User Interface
-
-The UI is a modern web application featuring:
-
-- **Navigation**: Breadcrumb navigation hierarchy (Home > Containers > Container Name)
-- **Date Display**: Relative dates ("2 hours ago") with absolute format on hover
-- **Container View**: Tile-based list with infinite scroll (25 items per page default)
-- **Blob View**: Paginated data table with configurable page sizes (10, 25, 50, 100 items)
-- **Actions**: Context menus for delete, download, info operations
-- **Modals**: Confirmation dialogs for destructive operations
-- **Slide-out Panels**: Detailed property views for containers and blobs
-
 ## Deployment
 
 The project includes Docker support for containerized deployment. Use Docker Compose to run Azurite UI alongside Azurite:
@@ -251,15 +239,6 @@ volumes:
 This `docker-compose.yml` is located [in the repository](./docker-compose.yml).
 
 Future builds will be automatically distributed to ghcr.io when GitHub releases are tagged.
-
-## Error Handling
-
-The application provides clear error feedback:
-
-- Connection status indicator in the navbar
-- User-friendly error messages when Azurite is unavailable
-- Validation errors from Azurite are displayed to users
-- Actionable error messages for operation failures
 
 ## Scope
 
