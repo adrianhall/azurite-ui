@@ -8,9 +8,11 @@ namespace AzuriteUI.Web.Controllers;
 public partial class StorageController : ODataController
 {
     /// <summary>
-    /// Retrieves the properties of a specific blob by its name.  This endpoint supports
-    /// RFC 7232 conditional requests using ETag and Last-Modified headers.
+    /// Retrieves the properties of a specific blob by its name.
     /// </summary>
+    /// <remarks>
+    /// This endpoint supports RFC 7232 conditional requests using ETag and Last-Modified headers.
+    /// </remarks>
     /// <param name="containerName">The name of the container to retrieve.</param>
     /// <param name="blobName">The name of the blob to retrieve.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>

@@ -10,8 +10,11 @@ public partial class StorageController : ODataController
     internal static readonly string[] ValidContentDispositions = ["attachment", "inline"];
 
     /// <summary>
-    /// Downloads the content of a blob from the specified container.  Supports HTTP Range requests for partial content downloads.
+    /// Downloads the content of a blob from the specified container.
     /// </summary>
+    /// <remarks>
+    /// Supports HTTP range requests, partial content, and content disposition.
+    /// </remarks>
     /// <param name="containerName">The name of the container.</param>
     /// <param name="blobName">The name of the blob to download.</param>
     /// <param name="disposition">Optional Content-Disposition value: "attachment" to force download, "inline" to display in browser.</param>

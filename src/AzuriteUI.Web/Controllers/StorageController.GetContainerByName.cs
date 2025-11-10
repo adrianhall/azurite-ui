@@ -8,9 +8,11 @@ namespace AzuriteUI.Web.Controllers;
 public partial class StorageController : ODataController
 {
     /// <summary>
-    /// Retrieves the properties of a specific container by its name.  This endpoint supports
-    /// RFC 7232 conditional requests using ETag and Last-Modified headers.
+    /// Retrieves the properties of a specific container by its name.
     /// </summary>
+    /// <remarks>
+    /// This endpoint supports RFC 7232 conditional requests using ETag and Last-Modified headers.
+    /// </remarks>
     /// <param name="containerName">The name of the container to retrieve.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>The container properties if found; otherwise, a NotFound result.</returns>

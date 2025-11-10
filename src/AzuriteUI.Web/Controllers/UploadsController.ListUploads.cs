@@ -15,9 +15,10 @@ namespace AzuriteUI.Web.Controllers;
 public partial class UploadsController : ODataController
 {
     /// <summary>
+    /// Lists all active upload sessions.
+    /// </summary>
+    /// <remarks>
     /// <para>
-    /// Lists all active upload sessions with OData v4 query support.
-    /// The GET method is used to retrieve resource representation. The resource is never modified.
     /// Supports the following OData query options:
     /// </para>
     /// <para>
@@ -28,9 +29,6 @@ public partial class UploadsController : ODataController
     /// - <c>$skip</c> is used to skip some entities.
     /// - <c>$top</c> is used to limit the number of entities returned.
     /// </para>
-    /// </summary>
-    /// <remarks>
-    /// We include the query parameters to drive the OpenAPI documentation, but they are not actually used in the code.
     /// </remarks>
     /// <param name="count">The OData <c>$count</c> query option.</param>
     /// <param name="filter">The OData <c>$filter</c> query option.</param>

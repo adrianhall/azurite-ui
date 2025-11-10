@@ -28,10 +28,12 @@ public class DashboardController(
     /// </summary>
     public ILogger Logger => logger;
 
-        /// <summary>
-    /// Retrieves dashboard information including statistics about containers and blobs,
-    /// and lists of recently modified containers and blobs.
+    /// <summary>
+    /// Retrieves dashboard information
     /// </summary>
+    /// <remarks>
+    /// This includes statistics about containers and blobs, and lists of recently modified containers and blobs.
+    /// </remarks>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
     /// <returns>The dashboard data.</returns>
     [HttpGet]
