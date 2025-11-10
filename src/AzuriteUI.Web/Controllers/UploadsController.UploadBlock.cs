@@ -7,9 +7,11 @@ namespace AzuriteUI.Web.Controllers;
 public partial class UploadsController : ODataController
 {
     /// <summary>
-    /// Uploads a block (chunk) of data for an upload session. The block data is streamed
-    /// directly to Azure Storage without buffering in memory.
+    /// Uploads a block (chunk) of data for an upload session. 
     /// </summary>
+    /// <remarks>
+    /// The block data is streamed directly to Azure Storage without buffering in memory.
+    /// </remarks>
     /// <param name="uploadId">The unique identifier of the upload session.</param>
     /// <param name="blockId">The Base64-encoded block identifier (must be unique within the blob and max 64 bytes when decoded).</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to monitor for cancellation requests.</param>

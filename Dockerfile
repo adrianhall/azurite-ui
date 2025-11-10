@@ -28,6 +28,9 @@ RUN dotnet publish "AzuriteUI.Web.csproj" \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user and group (use different IDs to avoid conflicts)
 RUN groupadd -r azuriteui --gid=1001 && \
     useradd -r -g azuriteui --uid=1001 --home-dir=/app --shell=/bin/bash azuriteui && \

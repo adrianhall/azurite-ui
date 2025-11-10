@@ -10,8 +10,10 @@ public partial class UploadsController : ODataController
 {
     /// <summary>
     /// Commits an upload session by finalizing the blob with the specified block list.
-    /// This operation will create the blob in Azure Storage and remove the upload session.
     /// </summary>
+    /// <remarks>
+    /// This operation will create the blob in Azure Storage and remove the upload session.
+    /// </remarks>
     /// <param name="uploadId">The unique identifier of the upload session.</param>
     /// <param name="request">The commit request containing the ordered list of block IDs.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to monitor for cancellation requests.</param>

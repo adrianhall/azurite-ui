@@ -15,8 +15,10 @@ namespace AzuriteUI.Web.Controllers;
 public partial class StorageController : ODataController
 {
     /// <summary>
+    /// Searches for blobs within a container.
+    /// </summary>
+    /// <remarks>
     /// <para>
-    /// The GET method is used to retrieve resource representation.  The resource is never modified.
     /// In this case, an OData v4 query is accepted with the following options:
     /// </para>
     /// <para>
@@ -27,9 +29,6 @@ public partial class StorageController : ODataController
     /// - <c>$skip</c> is used to skip some entities
     /// - <c>$top</c> is used to limit the number of entities returned.
     /// </para>
-    /// </summary>
-    /// <remarks>
-    /// We include the query parameters to drive the OpenAPI documentation, but they are not actually used in the code.
     /// </remarks>
     /// <param name="containerName">The name of the container to list blobs from.</param>
     /// <param name="count">The OData <c>$count</c> query option.</param>

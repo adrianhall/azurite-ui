@@ -276,15 +276,36 @@ Task("Test")
     Information("Tests completed successfully.");
 });
 
+Task("Docker")
+    .Description("Builds the Docker container")
+    .Does(() =>
+{
+    Information("Building Docker container...");
+
+    var exitCode = StartProcess("docker", new ProcessSettings
+    {
+        Arguments = "build -t azurite-ui:latest -f Dockerfile .",
+        WorkingDirectory = "."
+    });
+
+    if (exitCode != 0)
+    {
+        throw new Exception($"Docker build failed with exit code {exitCode}");
+    }
+
+    Information("Docker container built successfully.");
+});
+
 Task("Rebuild")
     .Description("Performs a clean build")
     .IsDependentOn("DeepClean")
     .IsDependentOn("Build");
 
 Task("CI")
-    .Description("Runs the full CI pipeline (DeepClean, Build, Test)")
+    .Description("Runs the full CI pipeline (DeepClean, Build, Test, Docker)")
     .IsDependentOn("Rebuild")
-    .IsDependentOn("Test");
+    .IsDependentOn("Test")
+    .IsDependentOn("Docker");
 
 Task("Default")
     .Description("Runs the default build (Build)")

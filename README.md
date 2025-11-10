@@ -88,10 +88,18 @@ dotnet cake
 
 #### CI Task
 
-- **CI** - Runs the full CI pipeline (deep clean, build, and test)
+- **CI** - Runs the full CI pipeline (deep clean, build, test, and Docker build)
 
   ```bash
   dotnet cake --target=CI
+  ```
+
+#### Docker Task
+
+- **Docker** - Builds the Docker container
+
+  ```bash
+  dotnet cake --target=Docker
   ```
 
 ### Build Configuration
@@ -151,6 +159,23 @@ The UI is a modern web application featuring:
 ## Deployment
 
 The project includes Docker support for containerized deployment. Use Docker Compose to run Azurite UI alongside Azurite:
+
+### Environment Configuration
+
+The Docker Compose setup supports environment variable configuration through a `.env` file. Copy [.env.example](./.env.example) to `.env` and modify as needed:
+
+```bash
+cp .env.example .env
+```
+
+Available environment variables:
+
+- `AZURITE_ACCOUNT_NAME` - Storage account name (default: devstoreaccount1)
+- `AZURITE_ACCOUNT_KEY` - Storage account key (default: well-known Azurite key)
+- `AZURITE_BLOB_PORT` - Blob service port (default: 10000)
+- `AZURITEUI_PORT` - AzuriteUI external port (default: 8080)
+
+### Docker Compose Configuration
 
 ```yaml
 services:

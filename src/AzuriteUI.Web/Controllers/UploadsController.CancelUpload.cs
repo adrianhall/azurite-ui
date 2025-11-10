@@ -7,8 +7,10 @@ public partial class UploadsController : ODataController
 {
     /// <summary>
     /// Cancels an upload session and removes it from the cache.
-    /// Staged blocks in Azure Storage will automatically expire.
     /// </summary>
+    /// <remarks>
+    /// Staged blocks in Azure Storage will automatically expire.
+    /// </remarks>
     /// <param name="uploadId">The unique identifier of the upload session to cancel.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
     /// <returns>No content on successful cancellation.</returns>
