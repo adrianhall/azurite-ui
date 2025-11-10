@@ -4,6 +4,7 @@ using AzuriteUI.Web.Filters;
 using AzuriteUI.Web.Services.Azurite;
 using AzuriteUI.Web.Services.CacheDb;
 using AzuriteUI.Web.Services.CacheSync;
+using AzuriteUI.Web.Services.Display;
 using AzuriteUI.Web.Services.Health;
 using AzuriteUI.Web.Services.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,10 @@ builder.Services
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
+// Razor Pages for UI
+builder.Services.AddSingleton<IDisplayHelper, DisplayHelper>();
+builder.Services.AddRazorPages();
+
 // Health Checks
 builder.Services.AddHealthChecks()
     .AddCheck<AzuriteHealthCheck>("Azurite");
@@ -70,7 +75,10 @@ builder.Services
 
 var app = builder.Build();
 
+app.UseStaticFiles();
 app.UseRouting();
+
+app.MapRazorPages();
 app.MapControllers();
 app.MapHealthChecks("/api/health");
 

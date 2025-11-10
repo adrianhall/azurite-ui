@@ -1,0 +1,211 @@
+@page
+@inject IDisplayHelper Display
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@* Breadcrumb and Action Button *@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item active" aria-current="page" data-testid="breadcrumb-home">Home</li>
+        </ol>
+    </nav>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContainerModal" data-testid="create-container-button">
+        <i class="bi bi-plus-circle me-1"></i> Container
+    </button>
+</div>
+
+@if (Model.Dashboard != null)
+{
+    @* Statistics Cards *@
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stats-card" data-testid="stat-containers">
+                <div class="stats-card-title">Containers</div>
+                <div class="stats-card-value">@Display.ConvertToFileCount(Model.Dashboard.Stats.Containers)</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stats-card" data-testid="stat-blobs">
+                <div class="stats-card-title">Blobs</div>
+                <div class="stats-card-value">@Display.ConvertToFileCount(Model.Dashboard.Stats.Blobs)</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stats-card" data-testid="stat-total-size">
+                <div class="stats-card-title">Total Size</div>
+                <div class="stats-card-value">@Display.ConvertToFileSize(Model.Dashboard.Stats.TotalBlobSize)</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stats-card" data-testid="stat-images-size">
+                <div class="stats-card-title">Images Size</div>
+                <div class="stats-card-value">@Display.ConvertToFileSize(Model.Dashboard.Stats.TotalImageSize)</div>
+            </div>
+        </div>
+    </div>
+
+    @* Recently Updated Tables *@
+    <div class="row g-3">
+        @* Recently Updated Containers *@
+        <div class="col-12 col-xl-6">
+            <div class="dashboard-table-container">
+                <h3 data-testid="recent-containers-title">Recently Updated Containers</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover" data-testid="recent-containers-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Last Modified</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end">Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Dashboard.RecentContainers.Any())
+                            {
+                                @foreach (var container in Model.Dashboard.RecentContainers)
+                                {
+                                    <tr class="cursor-pointer" onclick="window.location='/containers/@Uri.EscapeDataString(container.Name)'" data-testid="container-row">
+                                        <td>
+                                            <a href="/containers/@Uri.EscapeDataString(container.Name)" class="text-decoration-none">
+                                                @container.Name
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span title="@container.LastModified.ToString("yyyy-MM-dd HH:mm:ss")">
+                                                @Display.ConvertToRelativeTime(container.LastModified)
+                                            </span>
+                                        </td>
+                                        <td class="text-end">@Display.ConvertToFileCount(container.BlobCount)</td>
+                                        <td class="text-end">@Display.ConvertToFileSize(container.TotalSize)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr data-testid="no-containers">
+                                    <td colspan="4" class="text-center text-muted">No containers found</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @* Recently Updated Blobs *@
+        <div class="col-12 col-xl-6">
+            <div class="dashboard-table-container">
+                <h3 data-testid="recent-blobs-title">Recently Updated Blobs</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover" data-testid="recent-blobs-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Container</th>
+                                <th>Last Modified</th>
+                                <th class="text-end">Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Dashboard.RecentBlobs.Any())
+                            {
+                                @foreach (var blob in Model.Dashboard.RecentBlobs)
+                                {
+                                    <tr class="cursor-pointer" onclick="window.location='/containers/@Uri.EscapeDataString(blob.ContainerName)?blob=@Uri.EscapeDataString(blob.Name)'" data-testid="blob-row">
+                                        <td>
+                                            <i class="bi bi-@Display.ConvertToBootstrapIcon(blob.ContentType) me-2"></i>
+                                            <a href="/containers/@Uri.EscapeDataString(blob.ContainerName)?blob=@Uri.EscapeDataString(blob.Name)" class="text-decoration-none">
+                                                @blob.Name
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="/containers/@Uri.EscapeDataString(blob.ContainerName)" class="text-decoration-none">
+                                                @blob.ContainerName
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span title="@blob.LastModified.ToString("yyyy-MM-dd HH:mm:ss")">
+                                                @Display.ConvertToRelativeTime(blob.LastModified)
+                                            </span>
+                                        </td>
+                                        <td class="text-end">@Display.ConvertToFileSize(blob.ContentLength)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr data-testid="no-blobs">
+                                    <td colspan="4" class="text-center text-muted">No blobs found</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Create Container Modal *@
+<div class="modal fade" id="createContainerModal" tabindex="-1" aria-labelledby="createContainerModalLabel" aria-hidden="true" data-testid="create-container-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createContainerModalLabel">Create Container</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createContainerForm">
+                    <div class="mb-3">
+                        <label for="containerName" class="form-label">Container Name</label>
+                        <input type="text" class="form-control" id="containerName" name="containerName"
+                               pattern="^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+                               minlength="3" maxlength="63"
+                               placeholder="my-container"
+                               data-testid="container-name-input"
+                               required>
+                        <div class="form-text">Container names must be 3-63 characters, lowercase letters, numbers, and hyphens only.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="modal-cancel">Cancel</button>
+                <button type="submit" form="createContainerForm" class="btn btn-primary" data-testid="modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Create container form submission
+        document.getElementById('createContainerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const containerName = document.getElementById('containerName').value;
+
+            try {
+                const response = await fetch('/api/containers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: containerName })
+                });
+
+                if (response.ok) {
+                    // Close modal and reload page
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createContainerModal'));
+                    modal.hide();
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to create container: ' + (error.title || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to create container: ' + error.message);
+            }
+        });
+    </script>
+}

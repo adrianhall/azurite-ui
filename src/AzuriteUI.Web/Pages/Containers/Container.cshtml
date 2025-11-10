@@ -1,0 +1,36 @@
+@page "/containers/{containerName}"
+@model AzuriteUI.Web.Pages.Containers.ContainerModel
+@{
+    ViewData["Title"] = $"Blobs - {Model.ContainerName}";
+}
+
+@* Breadcrumb and Action Button *@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/containers">Containers</a></li>
+            <li class="breadcrumb-item active" aria-current="page" data-testid="breadcrumb-container">@Model.ContainerName</li>
+        </ol>
+    </nav>
+    <button type="button" class="btn btn-primary" data-testid="upload-button">
+        <i class="bi bi-upload me-1"></i> Upload
+    </button>
+</div>
+
+<div class="alert alert-info" role="alert" data-testid="placeholder-message">
+    <h4 class="alert-heading">Blobs Page - Coming Soon!</h4>
+    <p>This page will display a sortable, searchable list of all blobs in the <strong>@Model.ContainerName</strong> container with actions for:</p>
+    <ul>
+        <li>Delete blob</li>
+        <li>Get blob info</li>
+        <li>Download blob</li>
+    </ul>
+    @if (!string.IsNullOrEmpty(Model.Blob))
+    {
+        <hr>
+        <p class="mb-0">Selected blob: <strong>@Model.Blob</strong></p>
+    }
+    <hr>
+    <p class="mb-0">For now, you can view blobs from the dashboard.</p>
+</div>

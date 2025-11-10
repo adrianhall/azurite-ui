@@ -1,0 +1,30 @@
+@page
+@model AzuriteUI.Web.Pages.Containers.IndexModel
+@{
+    ViewData["Title"] = "Containers";
+}
+
+@* Breadcrumb and Action Button *@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page" data-testid="breadcrumb-containers">Containers</li>
+        </ol>
+    </nav>
+    <button type="button" class="btn btn-primary" data-testid="create-container-button">
+        <i class="bi bi-plus-circle me-1"></i> Container
+    </button>
+</div>
+
+<div class="alert alert-info" role="alert" data-testid="placeholder-message">
+    <h4 class="alert-heading">Containers Page - Coming Soon!</h4>
+    <p>This page will display a sortable, searchable list of all containers with actions for:</p>
+    <ul>
+        <li>Delete container</li>
+        <li>Get container info</li>
+        <li>Browse blobs in container</li>
+    </ul>
+    <hr>
+    <p class="mb-0">For now, you can view containers from the dashboard.</p>
+</div>
