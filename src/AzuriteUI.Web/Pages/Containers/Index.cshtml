@@ -1,4 +1,5 @@
 @page
+@inject IDisplayHelper Display
 @model AzuriteUI.Web.Pages.Containers.IndexModel
 @{
     ViewData["Title"] = "Containers";
@@ -12,19 +13,529 @@
             <li class="breadcrumb-item active" aria-current="page" data-testid="breadcrumb-containers">Containers</li>
         </ol>
     </nav>
-    <button type="button" class="btn btn-primary" data-testid="create-container-button">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContainerModal" data-testid="create-container-button">
         <i class="bi bi-plus-circle me-1"></i> Container
     </button>
 </div>
 
-<div class="alert alert-info" role="alert" data-testid="placeholder-message">
-    <h4 class="alert-heading">Containers Page - Coming Soon!</h4>
-    <p>This page will display a sortable, searchable list of all containers with actions for:</p>
-    <ul>
-        <li>Delete container</li>
-        <li>Get container info</li>
-        <li>Browse blobs in container</li>
-    </ul>
-    <hr>
-    <p class="mb-0">For now, you can view containers from the dashboard.</p>
+@* Containers Table *@
+<div class="containers-table-wrapper">
+    <div class="table-responsive" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+        <table class="table table-hover" data-testid="containers-table">
+            <thead class="sticky-top bg-white">
+                <tr>
+                    <th class="sortable" data-sort="name" data-testid="header-name">
+                        <span class="d-flex align-items-center">
+                            Container
+                            <i class="bi bi-chevron-down ms-1 sort-icon" data-testid="sort-icon-name"></i>
+                        </span>
+                    </th>
+                    <th class="sortable" data-sort="lastModified" data-testid="header-lastmodified">
+                        <span class="d-flex align-items-center">
+                            Last Modified
+                            <i class="bi bi-chevron-expand ms-1 sort-icon" data-testid="sort-icon-lastmodified"></i>
+                        </span>
+                    </th>
+                    <th class="sortable text-end" data-sort="blobCount" data-testid="header-count">
+                        <span class="d-flex align-items-center justify-content-end">
+                            Count
+                            <i class="bi bi-chevron-expand ms-1 sort-icon" data-testid="sort-icon-count"></i>
+                        </span>
+                    </th>
+                    <th class="sortable text-end" data-sort="totalSize" data-testid="header-size">
+                        <span class="d-flex align-items-center justify-content-end">
+                            Size
+                            <i class="bi bi-chevron-expand ms-1 sort-icon" data-testid="sort-icon-size"></i>
+                        </span>
+                    </th>
+                    <th class="text-center" data-testid="header-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="containersTableBody">
+                <tr data-testid="loading-row">
+                    <td colspan="5" class="text-center text-muted">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading containers...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="loadMoreContainer" class="text-center mt-3 d-none" data-testid="load-more-container">
+        <button id="loadMoreButton" class="btn btn-outline-primary" data-testid="load-more-button">
+            <i class="bi bi-arrow-down-circle me-1"></i> Load More
+        </button>
+    </div>
 </div>
+
+@* Create Container Modal *@
+<div class="modal fade" id="createContainerModal" tabindex="-1" aria-labelledby="createContainerModalLabel" aria-hidden="true" data-testid="create-container-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createContainerModalLabel">Create Container</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createContainerForm">
+                    <div class="mb-3">
+                        <label for="containerName" class="form-label">Container Name</label>
+                        <input type="text" class="form-control" id="containerName" name="containerName"
+                               pattern="[a-z0-9]([a-z0-9\-]*[a-z0-9])?"
+                               minlength="3" maxlength="63"
+                               placeholder="my-container"
+                               data-testid="container-name-input"
+                               required>
+                        <div class="form-text">Container names must be 3-63 characters, lowercase letters, numbers, and hyphens only.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="modal-cancel">Cancel</button>
+                <button type="submit" form="createContainerForm" class="btn btn-primary" data-testid="modal-create">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Delete Container Modal *@
+<div class="modal fade" id="deleteContainerModal" tabindex="-1" aria-labelledby="deleteContainerModalLabel" aria-hidden="true" data-testid="delete-container-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteContainerModalLabel">Delete Container</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" data-testid="delete-modal-body">
+                <p>Are you sure you want to delete container "<span id="deleteContainerName" data-testid="delete-container-name"></span>"?</p>
+                <p class="text-danger mb-0"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="delete-modal-cancel">Cancel</button>
+                <button type="button" id="confirmDeleteButton" class="btn btn-danger" data-testid="delete-modal-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Info Slide-out Panel *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="containerInfoPanel" aria-labelledby="containerInfoPanelLabel" data-testid="container-info-panel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="containerInfoPanelLabel">Container Information</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="containerInfoContent" data-testid="container-info-content">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="mt-4 d-flex gap-2 flex-wrap" id="containerInfoActions">
+            <!-- Action buttons will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let containers = [];
+        let currentSort = { field: 'name', direction: 'asc' };
+        let currentFilter = null;
+        let nextLink = null;
+        let isLoading = false;
+        let selectedContainer = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadContainers();
+            setupEventListeners();
+        });
+
+        // Load containers from API
+        async function loadContainers(append = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                const url = nextLink || buildApiUrl();
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error('Failed to load containers');
+                }
+
+                const data = await response.json();
+
+                if (append) {
+                    containers = containers.concat(data.items || []);
+                } else {
+                    containers = data.items || [];
+                }
+
+                nextLink = data.nextLink;
+
+                renderContainers(append);
+                updateLoadMoreButton();
+            } catch (error) {
+                console.error('Error loading containers:', error);
+                showError();
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Build API URL with sorting
+        function buildApiUrl() {
+            const params = new URLSearchParams();
+            params.append('$top', '25');
+
+            const sortField = getSortFieldForApi(currentSort.field);
+            const sortDirection = currentSort.direction === 'asc' ? '' : ' desc';
+            params.append('$orderby', sortField + sortDirection);
+
+            return `/api/containers?${params.toString()}`;
+        }
+
+        // Map UI field names to API field names
+        function getSortFieldForApi(field) {
+            const mapping = {
+                'name': 'name',
+                'lastModified': 'lastModified',
+                'blobCount': 'blobCount',
+                'totalSize': 'totalSize'
+            };
+            return mapping[field] || 'name';
+        }
+
+        // Render containers in table
+        function renderContainers(append = false) {
+            const tbody = document.getElementById('containersTableBody');
+
+            if (!append) {
+                tbody.innerHTML = '';
+            }
+
+            if (containers.length === 0) {
+                tbody.innerHTML = `
+                    <tr data-testid="no-containers">
+                        <td colspan="5" class="text-center text-muted">No containers found</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            containers.forEach(container => {
+                const row = createContainerRow(container);
+                tbody.appendChild(row);
+            });
+        }
+
+        // Create a table row for a container
+        function createContainerRow(container) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-testid', 'container-row');
+            tr.setAttribute('data-container-name', container.name);
+
+            // Name column
+            const nameCell = document.createElement('td');
+            nameCell.innerHTML = `<a href="/containers/${encodeURIComponent(container.name)}" class="text-decoration-none">${escapeHtml(container.name)}</a>`;
+            tr.appendChild(nameCell);
+
+            // Last Modified column
+            const lastModifiedCell = document.createElement('td');
+            lastModifiedCell.innerHTML = `<span title="${escapeHtml(container.lastModified)}">${escapeHtml(formatRelativeTime(container.lastModified))}</span>`;
+            tr.appendChild(lastModifiedCell);
+
+            // Count column
+            const countCell = document.createElement('td');
+            countCell.className = 'text-end';
+            countCell.textContent = container.blobCount || 0;
+            tr.appendChild(countCell);
+
+            // Size column
+            const sizeCell = document.createElement('td');
+            sizeCell.className = 'text-end';
+            sizeCell.textContent = formatFileSize(container.totalSize || 0);
+            tr.appendChild(sizeCell);
+
+            // Actions column
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'text-center';
+            actionsCell.innerHTML = `
+                <a href="javascript:void(0)" class="action-icon delete" title="Delete container" data-action="delete" data-testid="delete-icon">
+                    <i class="bi bi-trash"></i>
+                </a>
+                <a href="javascript:void(0)" class="action-icon info" title="Get info" data-action="info" data-testid="info-icon">
+                    <i class="bi bi-info-circle"></i>
+                </a>
+                <a href="/containers/${encodeURIComponent(container.name)}" class="action-icon browse" title="Browse" data-testid="browse-icon">
+                    <i class="bi bi-folder2-open"></i>
+                </a>
+            `;
+            tr.appendChild(actionsCell);
+
+            // Add action click handlers
+            actionsCell.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                showDeleteModal(container);
+            });
+
+            actionsCell.querySelector('[data-action="info"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                showInfoPanel(container);
+            });
+
+            return tr;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Sortable headers
+            document.querySelectorAll('.sortable').forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortField = header.getAttribute('data-sort');
+                    handleSort(sortField);
+                });
+            });
+
+            // Create container form
+            document.getElementById('createContainerForm').addEventListener('submit', handleCreateContainer);
+
+            // Delete confirmation
+            document.getElementById('confirmDeleteButton').addEventListener('click', handleDeleteContainer);
+
+            // Load more button
+            document.getElementById('loadMoreButton').addEventListener('click', () => {
+                loadContainers(true);
+            });
+        }
+
+        // Handle sorting
+        function handleSort(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'asc';
+            }
+
+            updateSortIcons();
+            nextLink = null;
+            loadContainers();
+        }
+
+        // Update sort icons
+        function updateSortIcons() {
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                const header = icon.closest('th');
+                const sortField = header?.getAttribute('data-sort');
+
+                if (sortField === currentSort.field) {
+                    icon.className = `bi ${currentSort.direction === 'asc' ? 'bi-chevron-down' : 'bi-chevron-up'} ms-1 sort-icon`;
+                } else {
+                    icon.className = 'bi bi-chevron-expand ms-1 sort-icon';
+                }
+            });
+        }
+
+        // Show/hide load more button
+        function updateLoadMoreButton() {
+            const container = document.getElementById('loadMoreContainer');
+            const button = document.getElementById('loadMoreButton');
+
+            if (nextLink && containers.length > 0) {
+                container.classList.remove('d-none');
+                button.disabled = isLoading;
+                button.innerHTML = isLoading
+                    ? '<span class="spinner-border spinner-border-sm me-1"></span> Loading...'
+                    : '<i class="bi bi-arrow-down-circle me-1"></i> Load More';
+            } else {
+                container.classList.add('d-none');
+            }
+        }
+
+        // Show delete modal
+        function showDeleteModal(container) {
+            selectedContainer = container;
+            document.getElementById('deleteContainerName').textContent = container.name;
+            const modal = new bootstrap.Modal(document.getElementById('deleteContainerModal'));
+            modal.show();
+        }
+
+        // Handle delete container
+        async function handleDeleteContainer() {
+            if (!selectedContainer) return;
+
+            const button = document.getElementById('confirmDeleteButton');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
+            try {
+                const response = await fetch(`/api/containers/${encodeURIComponent(selectedContainer.name)}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteContainerModal'));
+                    modal.hide();
+
+                    // Remove from local array
+                    containers = containers.filter(c => c.name !== selectedContainer.name);
+                    renderContainers();
+
+                    selectedContainer = null;
+                } else {
+                    const error = await response.json();
+                    alert('Failed to delete container: ' + (error.title || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to delete container: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'Delete';
+            }
+        }
+
+        // Show info panel
+        function showInfoPanel(container) {
+            selectedContainer = container;
+            const content = document.getElementById('containerInfoContent');
+
+            content.innerHTML = `
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Name</h6>
+                    <p class="mb-0" data-testid="info-name">${escapeHtml(container.name)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Last Modified</h6>
+                    <p class="mb-0" data-testid="info-lastmodified">${escapeHtml(container.lastModified)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">ETag</h6>
+                    <p class="mb-0 text-break" data-testid="info-etag">${escapeHtml(container.etag)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Blob Count</h6>
+                    <p class="mb-0" data-testid="info-blobcount">${container.blobCount || 0}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Total Size</h6>
+                    <p class="mb-0" data-testid="info-totalsize">${formatFileSize(container.totalSize || 0)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Public Access</h6>
+                    <p class="mb-0" data-testid="info-publicaccess">${escapeHtml(container.publicAccess || 'none')}</p>
+                </div>
+                ${container.metadata && Object.keys(container.metadata).length > 0 ? `
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Metadata</h6>
+                    <pre class="mb-0 small" data-testid="info-metadata">${escapeHtml(JSON.stringify(container.metadata, null, 2))}</pre>
+                </div>
+                ` : ''}
+            `;
+
+            // Add action buttons
+            const actions = document.getElementById('containerInfoActions');
+            actions.innerHTML = `
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="closeInfoPanelAndDelete()">
+                    <i class="bi bi-trash me-1"></i> Delete
+                </button>
+                <a href="/containers/${encodeURIComponent(container.name)}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-folder2-open me-1"></i> Browse
+                </a>
+            `;
+
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('containerInfoPanel'));
+            offcanvas.show();
+        }
+
+        // Close info panel and show delete modal
+        function closeInfoPanelAndDelete() {
+            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('containerInfoPanel'));
+            offcanvas.hide();
+
+            setTimeout(() => {
+                if (selectedContainer) {
+                    showDeleteModal(selectedContainer);
+                }
+            }, 300);
+        }
+
+        // Handle create container
+        async function handleCreateContainer(e) {
+            e.preventDefault();
+            const containerName = document.getElementById('containerName').value;
+            const button = e.submitter;
+
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Creating...';
+
+            try {
+                const response = await fetch('/api/containers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ containerName: containerName })
+                });
+
+                if (response.ok) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createContainerModal'));
+                    modal.hide();
+                    document.getElementById('createContainerForm').reset();
+
+                    // Reload containers
+                    nextLink = null;
+                    await loadContainers();
+                } else {
+                    const error = await response.json();
+                    alert('Failed to create container: ' + (error.title || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to create container: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'Create';
+            }
+        }
+
+        // Show error state
+        function showError() {
+            const tbody = document.getElementById('containersTableBody');
+            tbody.innerHTML = `
+                <tr data-testid="error-row">
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Failed to load containers. Please try again.
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Utility: Format relative time (simplified)
+        function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'a few seconds ago';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minute' + (Math.floor(seconds / 60) === 1 ? '' : 's') + ' ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hour' + (Math.floor(seconds / 3600) === 1 ? '' : 's') + ' ago';
+            return Math.floor(seconds / 86400) + ' day' + (Math.floor(seconds / 86400) === 1 ? '' : 's') + ' ago';
+        }
+
+        // Utility: Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 b';
+            const k = 1024;
+            const sizes = ['b', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 10) / 10 + ' ' + sizes[i];
+        }
+
+        // Utility: Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+}

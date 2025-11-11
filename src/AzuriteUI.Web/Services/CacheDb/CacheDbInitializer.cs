@@ -19,7 +19,7 @@ public class CacheDbInitializer(IServiceProvider serviceProvider, ILogger<CacheD
     /// <summary>
     /// The current schema version - this is incremented whenever a database schema change is made.
     /// </summary>
-    internal const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 2;
 
     /// <summary>
     /// Part of the IHostedService implementation - starts the database initialization.

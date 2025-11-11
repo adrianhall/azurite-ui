@@ -163,7 +163,7 @@
                     <div class="mb-3">
                         <label for="containerName" class="form-label">Container Name</label>
                         <input type="text" class="form-control" id="containerName" name="containerName"
-                               pattern="^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+                               pattern="[a-z0-9]([a-z0-9\-]*[a-z0-9])?"
                                minlength="3" maxlength="63"
                                placeholder="my-container"
                                data-testid="container-name-input"
@@ -191,7 +191,7 @@
                 const response = await fetch('/api/containers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: containerName })
+                    body: JSON.stringify({ containerName: containerName })
                 });
 
                 if (response.ok) {

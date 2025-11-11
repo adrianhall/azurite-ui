@@ -18,20 +18,20 @@ public class UploadBlockModelConfiguration : IEntityTypeConfiguration<UploadBloc
 
         // Required properties
         builder.Property(e => e.UploadId)
-               .IsRequired();
+            .IsRequired();
 
         builder.Property(e => e.BlockId)
-               .IsRequired();
+            .IsRequired();
 
         // Properties with converters
         builder.Property(e => e.UploadedAt)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         // Unique constraint on UploadId + BlockId to prevent duplicate block IDs
         builder.HasIndex(e => new { e.UploadId, e.BlockId })
-               .IsUnique();
+            .IsUnique();
 
         // Relationship is configured in UploadModelConfiguration
     }

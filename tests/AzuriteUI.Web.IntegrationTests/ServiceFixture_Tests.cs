@@ -24,7 +24,7 @@ public class ServiceInitialization_Tests(ServiceFixture fixture) : IClassFixture
         var schemaVersions = await context!.SchemaVersions.ToListAsync();
 
         // Assert
-        schemaVersions.Should().ContainSingle().And.ContainSingle(x => x.SchemaVersionId == 1);
+        schemaVersions.Should().ContainSingle().And.ContainSingle(x => x.SchemaVersionId == CacheDbInitializer.CurrentSchemaVersion);
     }
 
     [Fact(Timeout = 60000)]

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AzuriteUI.Web.Pages.Containers;
@@ -21,8 +22,9 @@ public class IndexModel : PageModel
     /// <summary>
     /// Handles GET requests to the containers list page.
     /// </summary>
-    public void OnGet()
+    public IActionResult OnGet()
     {
         _logger.LogInformation("Containers list page accessed");
+        return Page();
     }
 }

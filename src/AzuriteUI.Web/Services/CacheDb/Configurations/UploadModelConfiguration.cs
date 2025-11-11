@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Services.CacheDb.Comparers;
 using AzuriteUI.Web.Services.CacheDb.Converters;
 using AzuriteUI.Web.Services.CacheDb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -18,34 +19,34 @@ public class UploadModelConfiguration : IEntityTypeConfiguration<UploadModel>
 
         // Required properties
         builder.Property(e => e.ContainerName)
-               .IsRequired();
+            .IsRequired();
 
         builder.Property(e => e.BlobName)
-               .IsRequired();
+            .IsRequired();
 
         builder.Property(e => e.ContentType)
-               .IsRequired();
+            .IsRequired();
 
         // Properties with converters
         builder.Property(e => e.CreatedAt)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         builder.Property(e => e.LastActivityAt)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         builder.Property(e => e.Metadata)
-               .HasConversion<DictionaryJsonConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DictionaryJsonConverter, DictionaryValueComparer>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         builder.Property(e => e.Tags)
-               .HasConversion<DictionaryJsonConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DictionaryJsonConverter, DictionaryValueComparer>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         // Indexes for frequently queried properties
         builder.HasIndex(e => e.LastActivityAt);
@@ -53,8 +54,8 @@ public class UploadModelConfiguration : IEntityTypeConfiguration<UploadModel>
 
         // Relationships - Blocks will be cascade deleted when upload is deleted
         builder.HasMany(e => e.Blocks)
-               .WithOne(e => e.Upload)
-               .HasForeignKey(e => e.UploadId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(e => e.Upload)
+            .HasForeignKey(e => e.UploadId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Services.CacheDb.Comparers;
 using AzuriteUI.Web.Services.CacheDb.Converters;
 using AzuriteUI.Web.Services.CacheDb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -16,17 +17,17 @@ public abstract class ResourceModelConfiguration<T> : IEntityTypeConfiguration<T
     {
         // Configure common properties
         builder.Property(e => e.LastModified)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         builder.Property(e => e.Name)
-               .IsRequired();
+            .IsRequired();
 
         builder.Property(e => e.Metadata)
-               .HasConversion<DictionaryJsonConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DictionaryJsonConverter, DictionaryValueComparer>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         // Indices for frequently queries properties
         builder.HasIndex(e => e.LastModified);

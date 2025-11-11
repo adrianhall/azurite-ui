@@ -1,3 +1,4 @@
+using AzuriteUI.Web.Services.CacheDb.Comparers;
 using AzuriteUI.Web.Services.CacheDb.Converters;
 using AzuriteUI.Web.Services.CacheDb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -20,22 +21,22 @@ public class BlobModelConfiguration : ResourceModelConfiguration<BlobModel>
 
         // Properties with converters
         builder.Property(e => e.CreatedOn)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         builder.Property(e => e.ExpiresOn)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT");
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT");
 
         builder.Property(e => e.LastAccessedOn)
-               .HasConversion<DateTimeOffsetConverter>()
-               .HasColumnType("TEXT");
+            .HasConversion<DateTimeOffsetConverter>()
+            .HasColumnType("TEXT");
 
         builder.Property(e => e.Tags)
-               .HasConversion<DictionaryJsonConverter>()
-               .HasColumnType("TEXT")
-               .IsRequired();
+            .HasConversion<DictionaryJsonConverter, DictionaryValueComparer>()
+            .HasColumnType("TEXT")
+            .IsRequired();
 
         // Indexes for frequently queried properties
         builder.HasIndex(e => e.BlobType);
@@ -51,8 +52,8 @@ public class BlobModelConfiguration : ResourceModelConfiguration<BlobModel>
 
         // Relationships
         builder.HasOne(e => e.Container)
-               .WithMany(e => e.Blobs)
-               .HasForeignKey(e => e.ContainerName)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(e => e.Blobs)
+            .HasForeignKey(e => e.ContainerName)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
