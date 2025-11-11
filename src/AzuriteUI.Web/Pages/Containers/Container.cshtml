@@ -285,7 +285,7 @@
                 <a href="javascript:void(0)" class="action-icon info" title="Get info" data-action="info" data-testid="info-icon">
                     <i class="bi bi-info-circle"></i>
                 </a>
-                <a href="/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/download" class="action-icon download" title="Download" data-testid="download-icon" download>
+                <a href="/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/content?disposition=attachment" class="action-icon download" title="Download" data-testid="download-icon" download>
                     <i class="bi bi-cloud-download"></i>
                 </a>
             `;
@@ -333,6 +333,15 @@
 
             // Upload form
             document.getElementById('uploadForm').addEventListener('submit', handleUpload);
+
+            // Upload modal cancellation - when modal is about to close, cancel any ongoing upload
+            const uploadModal = document.getElementById('uploadModal');
+            uploadModal.addEventListener('hide.bs.modal', (event) => {
+                if (currentUploader) {
+                    // Cancel the upload
+                    currentUploader.cancel();
+                }
+            });
 
             // Delete confirmation
             document.getElementById('confirmDeleteButton').addEventListener('click', handleDeleteBlob);
@@ -463,6 +472,14 @@
                     <h6 class="text-muted mb-1">Blob Type</h6>
                     <p class="mb-0" data-testid="info-blobtype">${escapeHtml(blob.blobType)}</p>
                 </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Created On</h6>
+                    <p class="mb-0 ${blob.createdOn ? '' : 'text-muted'}" data-testid="info-createdon">${blob.createdOn ? escapeHtml(blob.createdOn) : 'not set'}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Expires On</h6>
+                    <p class="mb-0 ${blob.expiresOn ? '' : 'text-muted'}" data-testid="info-expireson">${blob.expiresOn ? escapeHtml(blob.expiresOn) : 'not set'}</p>
+                </div>
                 ${blob.metadata && Object.keys(blob.metadata).length > 0
                     ? `<div class="mb-3">
                         <h6 class="text-muted mb-1">Metadata</h6>
@@ -473,6 +490,16 @@
                         <p class="mb-0 text-muted" data-testid="info-metadata">No metadata</p>
                     </div>`
                 }
+                ${blob.tags && Object.keys(blob.tags).length > 0
+                    ? `<div class="mb-3">
+                        <h6 class="text-muted mb-1">Tags</h6>
+                        <pre class="mb-0 small" data-testid="info-tags">${escapeHtml(JSON.stringify(blob.tags, null, 2))}</pre>
+                    </div>`
+                    : `<div class="mb-3">
+                        <h6 class="text-muted mb-1">Tags</h6>
+                        <p class="mb-0 text-muted" data-testid="info-tags">No tags</p>
+                    </div>`
+                }
             `;
 
             // Add action buttons
@@ -481,7 +508,7 @@
                 <button type="button" class="btn btn-outline-danger btn-sm" onclick="closeInfoPanelAndDelete()">
                     <i class="bi bi-trash me-1"></i> Delete
                 </button>
-                <a href="/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/download" class="btn btn-outline-dark btn-sm" download>
+                <a href="/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/content?disposition=attachment" class="btn btn-outline-dark btn-sm" download>
                     <i class="bi bi-cloud-download me-1"></i> Download
                 </a>
             `;
@@ -502,7 +529,10 @@
             }, 300);
         }
 
-        // Handle upload (placeholder - actual implementation would use the Uploads API)
+        // Current uploader instance (for cancellation)
+        let currentUploader = null;
+
+        // Handle upload using BlobUploader
         async function handleUpload(e) {
             e.preventDefault();
             const fileInput = document.getElementById('blobFile');
@@ -517,19 +547,79 @@
             const progressContainer = document.getElementById('uploadProgressContainer');
             const progressBar = document.getElementById('uploadProgressBar');
 
+            // Disable button and show loading state
             button.disabled = true;
             button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading...';
             progressContainer.classList.remove('d-none');
 
-            // Placeholder: This would integrate with the actual Uploads API
-            // For now, just show a message
-            alert('Upload functionality requires integration with the Uploads API. This is a placeholder implementation.');
+            try {
+                // Create uploader instance
+                currentUploader = new BlobUploader(containerName, file);
 
+                // Listen for progress updates
+                currentUploader.addEventListener('upload:progress', (event) => {
+                    const { percent } = event.detail;
+                    progressBar.style.width = percent + '%';
+                    progressBar.setAttribute('aria-valuenow', percent);
+                    progressBar.textContent = percent + '%';
+                });
+
+                // Listen for completion
+                currentUploader.addEventListener('upload:complete', (event) => {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                    modal.hide();
+
+                    // Reset modal state
+                    resetUploadModal();
+
+                    // Refresh blobs list
+                    nextLink = null;
+                    loadBlobs();
+                });
+
+                // Listen for errors
+                currentUploader.addEventListener('upload:error', (event) => {
+                    const { message } = event.detail;
+                    alert('Upload failed: ' + message);
+                    resetUploadModal();
+                });
+
+                // Listen for cancellation
+                currentUploader.addEventListener('upload:cancelled', () => {
+                    resetUploadModal();
+                });
+
+                // Start upload
+                await currentUploader.upload();
+            } catch (error) {
+                // Error already handled by event listener, but catch here to prevent unhandled rejection
+                console.error('Upload error:', error);
+            }
+        }
+
+        // Reset upload modal to initial state
+        function resetUploadModal() {
+            const fileInput = document.getElementById('blobFile');
+            const button = document.querySelector('[data-testid="modal-upload"]');
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('uploadProgressBar');
+
+            // Reset file input
+            fileInput.value = '';
+
+            // Reset button
             button.disabled = false;
             button.innerHTML = 'Upload';
+
+            // Hide and reset progress bar
             progressContainer.classList.add('d-none');
             progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', '0');
             progressBar.textContent = '0%';
+
+            // Clear uploader reference
+            currentUploader = null;
         }
 
         // Show error state
@@ -573,4 +663,5 @@
             return div.innerHTML;
         }
     </script>
+    <script src="~/js/blobUploader.js"></script>
 }
