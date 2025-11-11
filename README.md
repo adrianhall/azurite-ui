@@ -15,6 +15,13 @@ Azurite is a free, open-source emulator that provides a local environment simula
 
 Since this is a developer console designed for local development, no authentication is required and denial-of-service protections like rate limiting are not implemented.
 
+## Use of AI Statement
+
+- All C# code within the AzuriteUI.Web project was written "by hand" with no AI involvement.
+- CSS and HTML code within the AzuriteUI.Web project was written with the assistance of AI (specifically; Claude Code).
+- Unit and integration test helpers were written "by hand" with no AI involvement.
+- The actual tests were written by an AI agent (specifically; Claude Code).
+
 ## Prerequisites
 
 - [.NET SDK](https://dotnet.microsoft.com/download) (version specified in global.json or project files)

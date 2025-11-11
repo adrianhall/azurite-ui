@@ -60,6 +60,11 @@ body {
     color: white;
 }
 
+.status-indicator.unknown {
+    background-color: var(--bs-warning);
+    color: black;
+}
+
 /* Dashboard Stats Cards */
 .stats-card {
     background-color: var(--content-bg);
@@ -68,6 +73,11 @@ body {
     padding: 1.5rem;
     text-align: center;
     height: 100%;
+    transition: box-shadow 0.2s ease;
+}
+
+.stats-card.cursor-pointer:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .stats-card-title {
