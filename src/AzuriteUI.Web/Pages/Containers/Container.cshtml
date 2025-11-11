@@ -1,4 +1,5 @@
 @page "/containers/{containerName}"
+@inject IDisplayHelper Display
 @model AzuriteUI.Web.Pages.Containers.ContainerModel
 @{
     ViewData["Title"] = $"Blobs - {Model.ContainerName}";
@@ -9,28 +10,567 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="/"><i class="bi bi-house-door-fill"></i></a></li>
-            <li class="breadcrumb-item"><a href="/containers">Containers</a></li>
+            <li class="breadcrumb-item"><a href="/containers" data-testid="breadcrumb-containers">Containers</a></li>
             <li class="breadcrumb-item active" aria-current="page" data-testid="breadcrumb-container">@Model.ContainerName</li>
         </ol>
     </nav>
-    <button type="button" class="btn btn-primary" data-testid="upload-button">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal" data-testid="upload-button">
         <i class="bi bi-upload me-1"></i> Upload
     </button>
 </div>
 
-<div class="alert alert-info" role="alert" data-testid="placeholder-message">
-    <h4 class="alert-heading">Blobs Page - Coming Soon!</h4>
-    <p>This page will display a sortable, searchable list of all blobs in the <strong>@Model.ContainerName</strong> container with actions for:</p>
-    <ul>
-        <li>Delete blob</li>
-        <li>Get blob info</li>
-        <li>Download blob</li>
-    </ul>
-    @if (!string.IsNullOrEmpty(Model.Blob))
-    {
-        <hr>
-        <p class="mb-0">Selected blob: <strong>@Model.Blob</strong></p>
-    }
-    <hr>
-    <p class="mb-0">For now, you can view blobs from the dashboard.</p>
+@* Blobs Table *@
+<div class="blobs-table-wrapper">
+    <div class="table-responsive" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+        <table class="table table-hover" data-testid="blobs-table">
+            <thead class="sticky-top bg-white">
+                <tr>
+                    <th class="sortable" data-sort="name" data-testid="header-name">
+                        <span class="d-flex align-items-center">
+                            Name
+                            <i class="bi bi-chevron-down ms-1 sort-icon" data-testid="sort-icon-name"></i>
+                        </span>
+                    </th>
+                    <th class="sortable" data-sort="lastModified" data-testid="header-lastmodified">
+                        <span class="d-flex align-items-center">
+                            Last Modified
+                            <i class="bi bi-chevron-expand ms-1 sort-icon" data-testid="sort-icon-lastmodified"></i>
+                        </span>
+                    </th>
+                    <th class="sortable" data-sort="contentType" data-testid="header-type">
+                        <span class="d-flex align-items-center">
+                            Type
+                            <i class="bi bi-chevron-expand ms-1 sort-icon" data-testid="sort-icon-type"></i>
+                        </span>
+                    </th>
+                    <th class="sortable text-end" data-sort="contentLength" data-testid="header-size">
+                        <span class="d-flex align-items-center justify-content-end">
+                            Size
+                            <i class="bi bi-chevron-expand ms-1 sort-icon" data-testid="sort-icon-size"></i>
+                        </span>
+                    </th>
+                    <th class="text-center" data-testid="header-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="blobsTableBody">
+                <tr data-testid="loading-row">
+                    <td colspan="5" class="text-center text-muted">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading blobs...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="loadMoreContainer" class="text-center mt-3 d-none" data-testid="load-more-container">
+        <button id="loadMoreButton" class="btn btn-outline-primary" data-testid="load-more-button">
+            <i class="bi bi-arrow-down-circle me-1"></i> Load More
+        </button>
+    </div>
 </div>
+
+@* Upload Modal *@
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true" data-testid="upload-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Upload Blob</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="blobFile" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="blobFile" name="blobFile" data-testid="blob-file-input" required>
+                    </div>
+                    <div class="mb-3 d-none" id="uploadProgressContainer">
+                        <label class="form-label">Upload Progress</label>
+                        <div class="progress">
+                            <div id="uploadProgressBar" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" data-testid="upload-progress-bar">0%</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="modal-cancel">Cancel</button>
+                <button type="submit" form="uploadForm" class="btn btn-primary" data-testid="modal-upload">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Delete Blob Modal *@
+<div class="modal fade" id="deleteBlobModal" tabindex="-1" aria-labelledby="deleteBlobModalLabel" aria-hidden="true" data-testid="delete-blob-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteBlobModalLabel">Delete Blob</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" data-testid="delete-modal-body">
+                <p>Are you sure you want to delete blob "<span id="deleteBlobName" data-testid="delete-blob-name"></span>"?</p>
+                <p class="text-danger mb-0"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="delete-modal-cancel">Cancel</button>
+                <button type="button" id="confirmDeleteButton" class="btn btn-danger" data-testid="delete-modal-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Info Slide-out Panel *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="blobInfoPanel" aria-labelledby="blobInfoPanelLabel" data-testid="blob-info-panel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="blobInfoPanelLabel">Blob Information</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div id="blobInfoContent" data-testid="blob-info-content">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="mt-4 d-flex gap-2 flex-wrap" id="blobInfoActions">
+            <!-- Action buttons will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let blobs = [];
+        let currentSort = { field: 'name', direction: 'asc' };
+        let currentFilter = null;
+        let nextLink = null;
+        let isLoading = false;
+        let selectedBlob = null;
+        const containerName = '@Model.ContainerName';
+        const highlightBlobName = '@Model.Blob';
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBlobs();
+            setupEventListeners();
+        });
+
+        // Load blobs from API
+        async function loadBlobs(append = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                const url = nextLink || buildApiUrl();
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error('Failed to load blobs');
+                }
+
+                const data = await response.json();
+
+                if (append) {
+                    blobs = blobs.concat(data.items || []);
+                } else {
+                    blobs = data.items || [];
+                }
+
+                nextLink = data.nextLink;
+
+                renderBlobs(append);
+                updateLoadMoreButton();
+
+                // If there's a blob to highlight, scroll to it and open info panel
+                if (highlightBlobName && !append) {
+                    setTimeout(() => {
+                        const blobRow = document.querySelector(`[data-blob-name="${escapeHtml(highlightBlobName)}"]`);
+                        if (blobRow) {
+                            blobRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const blob = blobs.find(b => b.name === highlightBlobName);
+                            if (blob) {
+                                showInfoPanel(blob);
+                            }
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error loading blobs:', error);
+                showError();
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Build API URL with sorting
+        function buildApiUrl() {
+            const params = new URLSearchParams();
+            params.append('$top', '25');
+
+            const sortField = getSortFieldForApi(currentSort.field);
+            const sortDirection = currentSort.direction === 'asc' ? '' : ' desc';
+            params.append('$orderby', sortField + sortDirection);
+
+            return `/api/containers/${encodeURIComponent(containerName)}/blobs?${params.toString()}`;
+        }
+
+        // Map UI field names to API field names
+        function getSortFieldForApi(field) {
+            const mapping = {
+                'name': 'name',
+                'lastModified': 'lastModified',
+                'contentType': 'contentType',
+                'contentLength': 'contentLength'
+            };
+            return mapping[field] || 'name';
+        }
+
+        // Render blobs in table
+        function renderBlobs(append = false) {
+            const tbody = document.getElementById('blobsTableBody');
+
+            if (!append) {
+                tbody.innerHTML = '';
+            }
+
+            if (blobs.length === 0) {
+                tbody.innerHTML = `
+                    <tr data-testid="no-blobs">
+                        <td colspan="5" class="text-center text-muted">No blobs found</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            blobs.forEach(blob => {
+                const row = createBlobRow(blob);
+                tbody.appendChild(row);
+            });
+        }
+
+        // Create a table row for a blob
+        function createBlobRow(blob) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-testid', 'blob-row');
+            tr.setAttribute('data-blob-name', blob.name);
+
+            // Name column with icon
+            const nameCell = document.createElement('td');
+            const icon = getContentTypeIcon(blob.contentType);
+            nameCell.innerHTML = `<i class="bi ${icon} me-2" data-testid="content-type-icon"></i><span>${escapeHtml(blob.name)}</span>`;
+            tr.appendChild(nameCell);
+
+            // Last Modified column
+            const lastModifiedCell = document.createElement('td');
+            lastModifiedCell.innerHTML = `<span title="${escapeHtml(blob.lastModified)}">${escapeHtml(formatRelativeTime(blob.lastModified))}</span>`;
+            tr.appendChild(lastModifiedCell);
+
+            // Type column
+            const typeCell = document.createElement('td');
+            typeCell.textContent = blob.contentType || 'application/octet-stream';
+            tr.appendChild(typeCell);
+
+            // Size column
+            const sizeCell = document.createElement('td');
+            sizeCell.className = 'text-end';
+            sizeCell.textContent = formatFileSize(blob.contentLength || 0);
+            tr.appendChild(sizeCell);
+
+            // Actions column
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'text-center';
+            actionsCell.innerHTML = `
+                <a href="javascript:void(0)" class="action-icon delete" title="Delete blob" data-action="delete" data-testid="delete-icon">
+                    <i class="bi bi-trash"></i>
+                </a>
+                <a href="javascript:void(0)" class="action-icon info" title="Get info" data-action="info" data-testid="info-icon">
+                    <i class="bi bi-info-circle"></i>
+                </a>
+                <a href="/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/download" class="action-icon download" title="Download" data-testid="download-icon" download>
+                    <i class="bi bi-cloud-download"></i>
+                </a>
+            `;
+            tr.appendChild(actionsCell);
+
+            // Add action click handlers
+            actionsCell.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                showDeleteModal(blob);
+            });
+
+            actionsCell.querySelector('[data-action="info"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                showInfoPanel(blob);
+            });
+
+            return tr;
+        }
+
+        // Get icon for content type
+        function getContentTypeIcon(contentType) {
+            if (!contentType) return 'bi-file-earmark';
+
+            if (contentType.startsWith('image/')) return 'bi-file-earmark-image';
+            if (contentType.startsWith('video/')) return 'bi-file-earmark-play';
+            if (contentType.startsWith('audio/')) return 'bi-file-earmark-music';
+            if (contentType.startsWith('text/')) return 'bi-file-earmark-text';
+            if (contentType.includes('pdf')) return 'bi-file-earmark-pdf';
+            if (contentType.includes('zip') || contentType.includes('compressed')) return 'bi-file-earmark-zip';
+            if (contentType.includes('json')) return 'bi-file-earmark-code';
+            if (contentType.includes('xml')) return 'bi-file-earmark-code';
+
+            return 'bi-file-earmark';
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Sortable headers
+            document.querySelectorAll('.sortable').forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortField = header.getAttribute('data-sort');
+                    handleSort(sortField);
+                });
+            });
+
+            // Upload form
+            document.getElementById('uploadForm').addEventListener('submit', handleUpload);
+
+            // Delete confirmation
+            document.getElementById('confirmDeleteButton').addEventListener('click', handleDeleteBlob);
+
+            // Load more button
+            document.getElementById('loadMoreButton').addEventListener('click', () => {
+                loadBlobs(true);
+            });
+        }
+
+        // Handle sorting
+        function handleSort(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'asc';
+            }
+
+            updateSortIcons();
+            nextLink = null;
+            loadBlobs();
+        }
+
+        // Update sort icons
+        function updateSortIcons() {
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                const header = icon.closest('th');
+                const sortField = header?.getAttribute('data-sort');
+
+                if (sortField === currentSort.field) {
+                    icon.className = `bi ${currentSort.direction === 'asc' ? 'bi-chevron-down' : 'bi-chevron-up'} ms-1 sort-icon`;
+                } else {
+                    icon.className = 'bi bi-chevron-expand ms-1 sort-icon';
+                }
+            });
+        }
+
+        // Show/hide load more button
+        function updateLoadMoreButton() {
+            const container = document.getElementById('loadMoreContainer');
+            const button = document.getElementById('loadMoreButton');
+
+            if (nextLink && blobs.length > 0) {
+                container.classList.remove('d-none');
+                button.disabled = isLoading;
+                button.innerHTML = isLoading
+                    ? '<span class="spinner-border spinner-border-sm me-1"></span> Loading...'
+                    : '<i class="bi bi-arrow-down-circle me-1"></i> Load More';
+            } else {
+                container.classList.add('d-none');
+            }
+        }
+
+        // Show delete modal
+        function showDeleteModal(blob) {
+            selectedBlob = blob;
+            document.getElementById('deleteBlobName').textContent = blob.name;
+            const modal = new bootstrap.Modal(document.getElementById('deleteBlobModal'));
+            modal.show();
+        }
+
+        // Handle delete blob
+        async function handleDeleteBlob() {
+            if (!selectedBlob) return;
+
+            const button = document.getElementById('confirmDeleteButton');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
+            try {
+                const response = await fetch(`/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(selectedBlob.name)}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok || response.status === 204) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteBlobModal'));
+                    modal.hide();
+
+                    // Remove from local array
+                    blobs = blobs.filter(b => b.name !== selectedBlob.name);
+                    renderBlobs();
+
+                    selectedBlob = null;
+                } else {
+                    const error = await response.json();
+                    alert('Failed to delete blob: ' + (error.title || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to delete blob: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'Delete';
+            }
+        }
+
+        // Show info panel
+        function showInfoPanel(blob) {
+            selectedBlob = blob;
+            const content = document.getElementById('blobInfoContent');
+
+            content.innerHTML = `
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Name</h6>
+                    <p class="mb-0" data-testid="info-name">${escapeHtml(blob.name)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Container</h6>
+                    <p class="mb-0" data-testid="info-container">${escapeHtml(blob.containerName)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Last Modified</h6>
+                    <p class="mb-0" data-testid="info-lastmodified">${escapeHtml(blob.lastModified)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">ETag</h6>
+                    <p class="mb-0 text-break" data-testid="info-etag">${escapeHtml(blob.eTag)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Content Type</h6>
+                    <p class="mb-0" data-testid="info-contenttype">${escapeHtml(blob.contentType)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Content Length</h6>
+                    <p class="mb-0" data-testid="info-contentlength">${formatFileSize(blob.contentLength || 0)}</p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted mb-1">Blob Type</h6>
+                    <p class="mb-0" data-testid="info-blobtype">${escapeHtml(blob.blobType)}</p>
+                </div>
+                ${blob.metadata && Object.keys(blob.metadata).length > 0
+                    ? `<div class="mb-3">
+                        <h6 class="text-muted mb-1">Metadata</h6>
+                        <pre class="mb-0 small" data-testid="info-metadata">${escapeHtml(JSON.stringify(blob.metadata, null, 2))}</pre>
+                    </div>`
+                    : `<div class="mb-3">
+                        <h6 class="text-muted mb-1">Metadata</h6>
+                        <p class="mb-0 text-muted" data-testid="info-metadata">No metadata</p>
+                    </div>`
+                }
+            `;
+
+            // Add action buttons
+            const actions = document.getElementById('blobInfoActions');
+            actions.innerHTML = `
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="closeInfoPanelAndDelete()">
+                    <i class="bi bi-trash me-1"></i> Delete
+                </button>
+                <a href="/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/download" class="btn btn-outline-dark btn-sm" download>
+                    <i class="bi bi-cloud-download me-1"></i> Download
+                </a>
+            `;
+
+            const offcanvas = new bootstrap.Offcanvas(document.getElementById('blobInfoPanel'));
+            offcanvas.show();
+        }
+
+        // Close info panel and show delete modal
+        function closeInfoPanelAndDelete() {
+            const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('blobInfoPanel'));
+            offcanvas.hide();
+
+            setTimeout(() => {
+                if (selectedBlob) {
+                    showDeleteModal(selectedBlob);
+                }
+            }, 300);
+        }
+
+        // Handle upload (placeholder - actual implementation would use the Uploads API)
+        async function handleUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('blobFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file to upload');
+                return;
+            }
+
+            const button = e.submitter;
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('uploadProgressBar');
+
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading...';
+            progressContainer.classList.remove('d-none');
+
+            // Placeholder: This would integrate with the actual Uploads API
+            // For now, just show a message
+            alert('Upload functionality requires integration with the Uploads API. This is a placeholder implementation.');
+
+            button.disabled = false;
+            button.innerHTML = 'Upload';
+            progressContainer.classList.add('d-none');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+        }
+
+        // Show error state
+        function showError() {
+            const tbody = document.getElementById('blobsTableBody');
+            tbody.innerHTML = `
+                <tr data-testid="error-row">
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Failed to load blobs. Please try again.
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Utility: Format relative time (simplified)
+        function formatRelativeTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'a few seconds ago';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minute' + (Math.floor(seconds / 60) === 1 ? '' : 's') + ' ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hour' + (Math.floor(seconds / 3600) === 1 ? '' : 's') + ' ago';
+            return Math.floor(seconds / 86400) + ' day' + (Math.floor(seconds / 86400) === 1 ? '' : 's') + ' ago';
+        }
+
+        // Utility: Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 b';
+            const k = 1024;
+            const sizes = ['b', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 10) / 10 + ' ' + sizes[i];
+        }
+
+        // Utility: Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+}
