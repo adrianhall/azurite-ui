@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ReportGenerator.DotnetCorePluginLoader</name>
+    </assembly>
+    <members>
+        <member name="T:ReportGenerator.DotnetCorePluginLoader.DotNetCoreAssemblyLoader">
+            <summary>
+            Aassembly loader for .NET Core.
+            </summary>
+        </member>
+        <member name="M:ReportGenerator.DotnetCorePluginLoader.DotNetCoreAssemblyLoader.Load(System.String)">
+            <summary>
+            Loads the assembly with the given name.
+            </summary>
+            <param name="name">The name of the assembly.</param>
+            <returns>The assembly.</returns>
+        </member>
+    </members>
+</doc>

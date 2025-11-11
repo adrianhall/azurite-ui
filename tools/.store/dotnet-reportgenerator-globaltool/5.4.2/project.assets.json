@@ -1,0 +1,39 @@
+{
+  "version": 3,
+  "targets": {
+    "net10.0/win-x64": {
+      "dotnet-reportgenerator-globaltool/5.4.2": {
+        "type": "package",
+        "tools": {
+          "tools/net9.0/any/DotNetConfig.dll": {},
+          "tools/net9.0/any/DotnetToolSettings.xml": {},
+          "tools/net9.0/any/McMaster.NETCore.Plugins.dll": {},
+          "tools/net9.0/any/Microsoft.DotNet.PlatformAbstractions.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Configuration.Abstractions.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Configuration.Binder.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Configuration.CommandLine.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Configuration.FileExtensions.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Configuration.Json.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Configuration.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.DependencyModel.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.FileProviders.Abstractions.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.FileProviders.Physical.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.FileSystemGlobbing.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.ObjectPool.dll": {},
+          "tools/net9.0/any/Microsoft.Extensions.Primitives.dll": {},
+          "tools/net9.0/any/ReportGenerator.Core.dll": {},
+          "tools/net9.0/any/ReportGenerator.Core.xml": {},
+          "tools/net9.0/any/ReportGenerator.DotnetCorePluginLoader.dll": {},
+          "tools/net9.0/any/ReportGenerator.DotnetCorePluginLoader.xml": {},
+          "tools/net9.0/any/ReportGenerator.deps.json": {},
+          "tools/net9.0/any/ReportGenerator.dll": {},
+          "tools/net9.0/any/ReportGenerator.exe": {},
+          "tools/net9.0/any/ReportGenerator.runtimeconfig.json": {},
+          "tools/net9.0/any/appsettings.json": {}
+        }
+      }
+    }
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {}
+}

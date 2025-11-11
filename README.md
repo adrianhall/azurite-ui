@@ -240,7 +240,6 @@ volumes:
   azurite-ui-data:
     name: azurite-ui-data
     driver: local
-
 ```
 
 This `docker-compose.yml` is located [in the repository](./docker-compose.yml).

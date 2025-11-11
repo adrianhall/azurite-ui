@@ -1,4 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////////
+// TOOLS
+///////////////////////////////////////////////////////////////////////////////
+
+#tool "dotnet:?package=dotnet-reportgenerator-globaltool&version=5.4.2"
+
+///////////////////////////////////////////////////////////////////////////////
 // ARGUMENTS
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -236,44 +242,64 @@ Task("Test")
     else
     {
         Information("Found {0} coverage file(s)", coverageFiles.Count);
-
-        // Generate coverage reports
-        Information("Generating coverage reports...");
-
-        // Use wildcard pattern to collect all coverage files in one pass
-        var coveragePattern = $"{testResultsDirectory}/**/coverage.cobertura.xml";
-
-        ReportGenerator(coverageFiles, coverageOutputDirectory, new ReportGeneratorSettings()
-        {
-            ReportTypes = [
-                ReportGeneratorReportType.MarkdownSummaryGithub,
-                ReportGeneratorReportType.TextSummary,
-                ReportGeneratorReportType.lcov
-            ],
-            ClassFilters = [
-                "+AzuriteUI.Web*"
-            ],
-            SourceDirectories = [
-                "./src"
-            ]
-        });
-
-
-        // Display coverage summary
-        var summaryFile = coverageOutputDirectory + "/Summary.txt";
-        if (FileExists(summaryFile))
-        {
-            Information("========================================");
-            Information("Coverage Summary:");
-            Information("========================================");
-            var summary = System.IO.File.ReadAllText(summaryFile);
-            Information(summary);
-            Information("========================================");
-            Information("Test results directory: {0}", MakeAbsolute(Directory(testResultsDirectory)).FullPath);
-        }
+        Information("Coverage files will be processed by CI pipeline");
+        Information("Test results directory: {0}", MakeAbsolute(Directory(testResultsDirectory)).FullPath);
     }
 
     Information("Tests completed successfully.");
+});
+
+Task("GenerateReports")
+    .Description("Generates coverage reports from test results")
+    .IsDependentOn("Test")
+    .Does(() =>
+{
+    Information("Generating coverage reports...");
+
+    EnsureDirectoryExists(coverageOutputDirectory);
+
+    // Find all coverage files in test results directory
+    var coverageFiles = GetFiles(testResultsDirectory + "/**/coverage.cobertura.xml");
+
+    if (coverageFiles.Count == 0)
+    {
+        Warning("No coverage files found! Skipping report generation.");
+        return;
+    }
+
+    Information("Found {0} coverage file(s)", coverageFiles.Count);
+
+    // Generate coverage reports using ReportGenerator tool
+    ReportGenerator(coverageFiles, coverageOutputDirectory, new ReportGeneratorSettings()
+    {
+        ReportTypes = [
+            ReportGeneratorReportType.MarkdownSummaryGithub,
+            ReportGeneratorReportType.TextSummary,
+            ReportGeneratorReportType.lcov,
+            ReportGeneratorReportType.Cobertura
+        ],
+        ClassFilters = [
+            "+AzuriteUI.Web*"
+        ],
+        SourceDirectories = [
+            "./src"
+        ]
+    });
+
+    // Display coverage summary
+    var summaryFile = coverageOutputDirectory + "/Summary.txt";
+    if (FileExists(summaryFile))
+    {
+        Information("========================================");
+        Information("Coverage Summary:");
+        Information("========================================");
+        var summary = System.IO.File.ReadAllText(summaryFile);
+        Information(summary);
+        Information("========================================");
+        Information("Coverage reports: {0}", MakeAbsolute(Directory(coverageOutputDirectory)).FullPath);
+    }
+
+    Information("Report generation completed successfully.");
 });
 
 Task("Docker")
@@ -302,14 +328,14 @@ Task("Rebuild")
     .IsDependentOn("Build");
 
 Task("CI")
-    .Description("Runs the full CI pipeline (DeepClean, Build, Test, Docker)")
+    .Description("Runs the CI pipeline (DeepClean, Build, Test with coverage)")
     .IsDependentOn("Rebuild")
-    .IsDependentOn("Test")
-    .IsDependentOn("Docker");
+    .IsDependentOn("Test");
 
 Task("Default")
-    .Description("Runs the default build (Build)")
-    .IsDependentOn("CI");
+    .Description("Runs the default build with coverage reports (DeepClean, Build, Test, GenerateReports)")
+    .IsDependentOn("Rebuild")
+    .IsDependentOn("GenerateReports");
 ///////////////////////////////////////////////////////////////////////////////
 // EXECUTION
 ///////////////////////////////////////////////////////////////////////////////

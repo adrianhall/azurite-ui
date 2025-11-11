@@ -37,6 +37,16 @@ jobs:
     - name: Run Cake CI target
       run: dotnet cake --target=CI
 
+    - name: Generate coverage reports
+      if: always()
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.2
+      with:
+        reports: 'artifacts/test-results/**/coverage.cobertura.xml'
+        targetdir: 'artifacts/coverage'
+        reporttypes: 'MarkdownSummaryGithub;TextSummary;lcov;Cobertura'
+        sourcedirs: 'src'
+        classfilters: '+AzuriteUI.Web*'
+
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
@@ -68,7 +78,7 @@ jobs:
       if: always()
       uses: irongut/CodeCoverageSummary@v1.3.0
       with:
-        filename: 'artifacts/coverage/**/coverage.cobertura.xml'
+        filename: 'artifacts/coverage/Cobertura.xml'
         badge: true
         fail_below_min: false
         format: markdown
