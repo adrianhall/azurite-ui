@@ -170,6 +170,16 @@ Available environment variables:
 - `AZURITE_BLOB_PORT` - Blob service port (default: 10000)
 - `AZURITEUI_PORT` - AzuriteUI external port (default: 8080)
 
+### Quick Start with Docker Compose
+
+Run Azurite UI with the published container image:
+
+```bash
+docker compose -f docker-compose.example.yml up -d
+```
+
+Access the UI at <http://localhost:8080>
+
 ### Docker Compose Configuration
 
 ```yaml
@@ -198,11 +208,7 @@ services:
 
   # AzuriteUI - Web interface (exposed externally)
   azuriteui:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_CONFIGURATION: Release
+    image: ghcr.io/adrianhall/azurite-ui:1.0.0
     container_name: azurite-ui
     hostname: azurite-ui
     restart: unless-stopped
@@ -242,9 +248,21 @@ volumes:
     driver: local
 ```
 
-This `docker-compose.yml` is located [in the repository](./docker-compose.yml).
+This configuration is available as [docker-compose.example.yml](./docker-compose.example.yml) in the repository.
 
-Future builds will be automatically distributed to ghcr.io when GitHub releases are tagged.
+### Using Latest Release
+
+Container images are automatically published to GitHub Container Registry with each release:
+
+```bash
+# Pull specific version
+docker pull ghcr.io/adrianhall/azurite-ui:1.0.0
+
+# Pull latest stable release
+docker pull ghcr.io/adrianhall/azurite-ui:latest
+```
+
+For development builds from source, use [docker-compose.yml](./docker-compose.yml) which builds the image locally.
 
 ## Scope
 
