@@ -17,7 +17,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      checks: write
 
     steps:
     - name: Checkout code
@@ -47,14 +46,6 @@ jobs:
         sourcedirs: 'src'
         classfilters: '+AzuriteUI.Web*'
 
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: artifacts/test-results/**/*.trx
-        retention-days: 30
-
     - name: Upload coverage reports
       if: always()
       uses: actions/upload-artifact@v4
@@ -64,15 +55,6 @@ jobs:
           artifacts/coverage/**/*
           !artifacts/coverage/**/*.cobertura.xml
         retention-days: 30
-
-    - name: Publish test results
-      if: always()
-      uses: dorny/test-reporter@v1
-      with:
-        name: Test Results
-        path: 'artifacts/test-results/**/*.trx'
-        reporter: dotnet-trx
-        fail-on-error: true
 
     - name: Code Coverage Summary
       if: always()
