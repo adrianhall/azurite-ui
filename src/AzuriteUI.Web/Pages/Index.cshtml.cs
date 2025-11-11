@@ -25,7 +25,6 @@ public class IndexModel(IStorageRepository repository, ILogger<IndexModel> logge
         try
         {
             Dashboard = await repository.GetDashboardDataAsync(HttpContext.RequestAborted);
-            return Page();
         }
         catch (Exception ex)
         {
@@ -44,7 +43,7 @@ public class IndexModel(IStorageRepository repository, ILogger<IndexModel> logge
                 RecentBlobs = []
             };
             // TODO: Display error message as toast.
-            return Page();
         }
+        return Page();
     }
 }

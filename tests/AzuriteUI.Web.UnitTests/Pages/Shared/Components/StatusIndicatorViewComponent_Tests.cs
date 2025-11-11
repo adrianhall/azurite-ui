@@ -1,4 +1,4 @@
-using AzuriteUI.Web.Components;
+using AzuriteUI.Web.Pages.Shared.Components;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewComponents;
@@ -6,17 +6,17 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using NSubstitute;
 using Xunit;
 
-namespace AzuriteUI.Web.UnitTests.Components;
+namespace AzuriteUI.Web.UnitTests.Pages.Shared.Components;
 
 /// <summary>
 /// Unit tests for the <see cref="StatusIndicatorViewComponent"/>.
 /// </summary>
-public class StatusIndicatorViewComponentTests
+public class StatusIndicatorViewComponent_Tests
 {
     private readonly HealthCheckService _healthCheckService;
     private readonly StatusIndicatorViewComponent _component;
 
-    public StatusIndicatorViewComponentTests()
+    public StatusIndicatorViewComponent_Tests()
     {
         _healthCheckService = Substitute.For<HealthCheckService>();
         _component = new StatusIndicatorViewComponent(_healthCheckService);

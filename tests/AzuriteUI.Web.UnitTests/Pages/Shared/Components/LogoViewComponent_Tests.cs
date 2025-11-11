@@ -1,12 +1,12 @@
-using AzuriteUI.Web.Components;
+using AzuriteUI.Web.Pages.Shared.Components;
 using Xunit;
 
-namespace AzuriteUI.Web.UnitTests.Components;
+namespace AzuriteUI.Web.UnitTests.Pages.Shared.Components;
 
 /// <summary>
 /// Unit tests for the <see cref="LogoViewComponent"/>.
 /// </summary>
-public class LogoViewComponentTests
+public class LogoViewComponent_Tests
 {
     [Fact]
     public void Invoke_ReturnsViewComponentResult()

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace AzuriteUI.Web.Components;
+namespace AzuriteUI.Web.Pages.Shared.Components;
 
 /// <summary>
 /// View component for displaying the connection status indicator.

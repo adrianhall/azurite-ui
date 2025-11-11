@@ -1,4 +1,4 @@
-@model AzuriteUI.Web.Components.StatusIndicatorViewModel
+@model AzuriteUI.Web.Pages.Shared.Components.StatusIndicatorViewModel
 
 <div class="status-indicator @Model.CssClass" data-testid="status-indicator" data-status="@(Model.IsHealthy ? "connected" : "disconnected")">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-@Model.Icon" viewBox="0 0 16 16">

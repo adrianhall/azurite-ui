@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace AzuriteUI.Web.Components;
+namespace AzuriteUI.Web.Pages.Shared.Components;
 
 /// <summary>
 /// View component for the application logo.
