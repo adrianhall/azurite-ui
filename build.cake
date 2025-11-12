@@ -19,6 +19,7 @@ var solutionFile = File("./AzuriteUI.sln");
 var artifactsDirectory = "./artifacts";
 var testResultsDirectory = "./artifacts/test-results";
 var coverageOutputDirectory = "./artifacts/coverage";
+var wwwLibDirectory = "./src/AzuriteUI.Web/wwwroot/lib";
 
 // Projects
 var testProjects = GetFiles("./tests/**/*.csproj");
@@ -101,6 +102,17 @@ Task("DeepClean")
     {
         Information("Deleting directory: {0}", dir);
         DeleteDirectory(dir, new DeleteDirectorySettings
+        {
+            Recursive = true,
+            Force = true
+        });
+    }
+
+    // Remove wwwroot/lib directory (client-side libraries)
+    if (DirectoryExists(wwwLibDirectory))
+    {
+        Information("Deleting directory: {0}", wwwLibDirectory);
+        DeleteDirectory(wwwLibDirectory, new DeleteDirectorySettings
         {
             Recursive = true,
             Force = true
