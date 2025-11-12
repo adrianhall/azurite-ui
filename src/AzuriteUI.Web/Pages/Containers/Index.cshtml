@@ -121,7 +121,7 @@
 </div>
 
 @* Info Slide-out Panel *@
-<div class="offcanvas offcanvas-end" tabindex="-1" id="containerInfoPanel" aria-labelledby="containerInfoPanelLabel" data-testid="container-info-panel">
+<div class="offcanvas offcanvas-end offcanvas-container-info" tabindex="-1" id="containerInfoPanel" aria-labelledby="containerInfoPanelLabel" data-testid="container-info-panel">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="containerInfoPanelLabel">Container Information</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -137,6 +137,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/metadataEditor.js"></script>
     <script>
         let containers = [];
         let currentSort = { field: 'name', direction: 'asc' };
@@ -144,6 +145,7 @@
         let nextLink = null;
         let isLoading = false;
         let selectedContainer = null;
+        let metadataEditorInstance = null;
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
@@ -402,38 +404,54 @@
             const content = document.getElementById('containerInfoContent');
 
             content.innerHTML = `
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Name</h6>
-                    <p class="mb-0" data-testid="info-name">${escapeHtml(container.name)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Last Modified</h6>
-                    <p class="mb-0" data-testid="info-lastmodified">${escapeHtml(container.lastModified)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">ETag</h6>
-                    <p class="mb-0 text-break" data-testid="info-etag">${escapeHtml(container.eTag)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Blob Count</h6>
-                    <p class="mb-0" data-testid="info-blobcount">${container.blobCount || 0}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Total Size</h6>
-                    <p class="mb-0" data-testid="info-totalsize">${formatFileSize(container.totalSize || 0)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Public Access</h6>
-                    <p class="mb-0" data-testid="info-publicaccess">${escapeHtml(container.publicAccess || 'none')}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Metadata</h6>
-                    ${container.metadata && Object.keys(container.metadata).length > 0
-                        ? `<pre class="mb-0 small" data-testid="info-metadata">${escapeHtml(JSON.stringify(container.metadata, null, 2))}</pre>`
-                        : `<p class="mb-0 text-muted" data-testid="info-metadata">No metadata</p>`
-                    }
-                </div>
+                <table class="container-info-table">
+                    <tbody>
+                        <tr>
+                            <th>Name</th>
+                            <td data-testid="info-name">${escapeHtml(container.name)}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Modified</th>
+                            <td data-testid="info-lastmodified">${escapeHtml(container.lastModified)}</td>
+                        </tr>
+                        <tr>
+                            <th>ETag</th>
+                            <td class="text-break" data-testid="info-etag">${escapeHtml(container.eTag)}</td>
+                        </tr>
+                        <tr>
+                            <th>Blob Count</th>
+                            <td data-testid="info-blobcount">${container.blobCount || 0}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Size</th>
+                            <td data-testid="info-totalsize">${formatFileSize(container.totalSize || 0)}</td>
+                        </tr>
+                        <tr>
+                            <th>Public Access</th>
+                            <td data-testid="info-publicaccess">${escapeHtml(container.publicAccess || 'none')}</td>
+                        </tr>
+                        <tr>
+                            <th>Metadata</th>
+                            <td data-testid="info-metadata">
+                                <div id="metadata-editor-container"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             `;
+
+            // Initialize metadata editor
+            metadataEditorInstance = new MetadataEditor(
+                'metadata-editor-container',
+                container.metadata,
+                async (newMetadata) => {
+                    return await saveContainerMetadata(container.name, newMetadata);
+                },
+                () => {
+                    console.log('Metadata edit cancelled');
+                }
+            );
+            metadataEditorInstance.render();
 
             // Add action buttons
             const actions = document.getElementById('containerInfoActions');
@@ -448,6 +466,44 @@
 
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('containerInfoPanel'));
             offcanvas.show();
+        }
+
+        // Save container metadata
+        async function saveContainerMetadata(containerName, newMetadata) {
+            try {
+                const response = await fetch(`/api/containers/${encodeURIComponent(containerName)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        containerName: containerName,
+                        metadata: newMetadata
+                    })
+                });
+
+                if (response.ok) {
+                    const updatedContainer = await response.json();
+
+                    // Update the container in the local array
+                    const index = containers.findIndex(c => c.name === containerName);
+                    if (index !== -1) {
+                        containers[index] = updatedContainer;
+                        renderContainers();
+                    }
+
+                    // Update selectedContainer
+                    selectedContainer = updatedContainer;
+
+                    return true;
+                } else {
+                    const error = await response.json();
+                    alert('Failed to update metadata: ' + (error.title || 'Unknown error'));
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error updating metadata:', error);
+                alert('Failed to update metadata. Please try again.');
+                return false;
+            }
         }
 
         // Close info panel and show delete modal
