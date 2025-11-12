@@ -6,7 +6,6 @@
         <LangVersion>latest</LangVersion>
         <NeutralLanguage>en</NeutralLanguage>
         <Nullable>enable</Nullable>
-        <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
         <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
 
