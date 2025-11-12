@@ -8,6 +8,7 @@ WORKDIR /src
 # Copy csproj files and restore dependencies (better layer caching)
 COPY ["Directory.Build.props", "./"]
 COPY ["src/AzuriteUI.Web/AzuriteUI.Web.csproj", "src/AzuriteUI.Web/"]
+COPY ["src/AzuriteUI.Web/libman.json", "src/AzuriteUI.Web/"]
 RUN dotnet restore "src/AzuriteUI.Web/AzuriteUI.Web.csproj"
 
 # Copy source code and build
