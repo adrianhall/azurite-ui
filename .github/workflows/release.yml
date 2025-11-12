@@ -6,7 +6,6 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  DOTNET_QUALITY: 'preview'
   REGISTRY: ghcr.io
   IMAGE_NAME: adrianhall/azurite-ui
 
