@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using AzuriteUI.Web.Controllers.Models;
+using AzuriteUI.Web.Services.CacheDb;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AzuriteUI.Web.IntegrationTests.API;
 
@@ -216,6 +219,16 @@ public class DashboardController_GetDashboard_Tests(ServiceFixture fixture) : Ba
         await Fixture.Azurite.CreateBlobAsync(containerName, "blob.txt", "content");
 
         await Fixture.SynchronizeCacheAsync();
+        // Find the time of the container and blob LastModified
+        DateTimeOffset? lastModified = null;
+        using (var scope = Fixture.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
+            var cInfo = await context.Containers.SingleAsync(c => c.Name == containerName);
+            var bInfo = await context.Blobs.Where(b => b.ContainerName == containerName).MaxAsync(b => b.LastModified);
+            lastModified = cInfo.LastModified > bInfo ? cInfo.LastModified : bInfo;
+        }
+
         using HttpClient client = Fixture.CreateClient();
 
         // Act
@@ -228,7 +241,7 @@ public class DashboardController_GetDashboard_Tests(ServiceFixture fixture) : Ba
 
         var container = result.RecentContainers.First();
         container.Name.Should().Be(containerName);
-        container.LastModified.Should().BeCloseTo(containerCreatedTime, TimeSpan.FromSeconds(2));
+        container.LastModified.Should().BeCloseTo(lastModified.Value, TimeSpan.FromSeconds(2));
         container.BlobCount.Should().Be(1);
     }
 

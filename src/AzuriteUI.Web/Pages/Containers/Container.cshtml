@@ -122,7 +122,7 @@
 </div>
 
 @* Info Slide-out Panel *@
-<div class="offcanvas offcanvas-end" tabindex="-1" id="blobInfoPanel" aria-labelledby="blobInfoPanelLabel" data-testid="blob-info-panel">
+<div class="offcanvas offcanvas-end offcanvas-blob-info" tabindex="-1" id="blobInfoPanel" aria-labelledby="blobInfoPanelLabel" data-testid="blob-info-panel">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="blobInfoPanelLabel">Blob Information</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -443,63 +443,78 @@
             selectedBlob = blob;
             const content = document.getElementById('blobInfoContent');
 
+            // Check if blob is an image type for preview
+            const isImage = blob.contentType && blob.contentType.toLowerCase().startsWith('image/');
+            const imagePreviewUrl = isImage
+                ? `/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(blob.name)}/content?disposition=inline`
+                : null;
+
             content.innerHTML = `
                 <div class="mb-3">
                     <h6 class="text-muted mb-1">Name</h6>
-                    <p class="mb-0" data-testid="info-name">${escapeHtml(blob.name)}</p>
+                    <p class="mb-0 fw-semibold" data-testid="info-name">${escapeHtml(blob.name)}</p>
                 </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Container</h6>
-                    <p class="mb-0" data-testid="info-container">${escapeHtml(blob.containerName)}</p>
+
+                ${isImage ? `
+                <div class="blob-preview-container">
+                    <img src="${imagePreviewUrl}" alt="${escapeHtml(blob.name)}" class="blob-preview-image" />
                 </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Last Modified</h6>
-                    <p class="mb-0" data-testid="info-lastmodified">${escapeHtml(blob.lastModified)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">ETag</h6>
-                    <p class="mb-0 text-break" data-testid="info-etag">${escapeHtml(blob.eTag)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Content Type</h6>
-                    <p class="mb-0" data-testid="info-contenttype">${escapeHtml(blob.contentType)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Content Length</h6>
-                    <p class="mb-0" data-testid="info-contentlength">${formatFileSize(blob.contentLength || 0)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Blob Type</h6>
-                    <p class="mb-0" data-testid="info-blobtype">${escapeHtml(blob.blobType)}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Created On</h6>
-                    <p class="mb-0 ${blob.createdOn ? '' : 'text-muted'}" data-testid="info-createdon">${blob.createdOn ? escapeHtml(blob.createdOn) : 'not set'}</p>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-muted mb-1">Expires On</h6>
-                    <p class="mb-0 ${blob.expiresOn ? '' : 'text-muted'}" data-testid="info-expireson">${blob.expiresOn ? escapeHtml(blob.expiresOn) : 'not set'}</p>
-                </div>
-                ${blob.metadata && Object.keys(blob.metadata).length > 0
-                    ? `<div class="mb-3">
-                        <h6 class="text-muted mb-1">Metadata</h6>
-                        <pre class="mb-0 small" data-testid="info-metadata">${escapeHtml(JSON.stringify(blob.metadata, null, 2))}</pre>
-                    </div>`
-                    : `<div class="mb-3">
-                        <h6 class="text-muted mb-1">Metadata</h6>
-                        <p class="mb-0 text-muted" data-testid="info-metadata">No metadata</p>
-                    </div>`
-                }
-                ${blob.tags && Object.keys(blob.tags).length > 0
-                    ? `<div class="mb-3">
-                        <h6 class="text-muted mb-1">Tags</h6>
-                        <pre class="mb-0 small" data-testid="info-tags">${escapeHtml(JSON.stringify(blob.tags, null, 2))}</pre>
-                    </div>`
-                    : `<div class="mb-3">
-                        <h6 class="text-muted mb-1">Tags</h6>
-                        <p class="mb-0 text-muted" data-testid="info-tags">No tags</p>
-                    </div>`
-                }
+                ` : ''}
+
+                <table class="blob-info-table">
+                    <tbody>
+                        <tr>
+                            <th>Container</th>
+                            <td data-testid="info-container">${escapeHtml(blob.containerName)}</td>
+                        </tr>
+                        <tr>
+                            <th>Last Modified</th>
+                            <td data-testid="info-lastmodified">${escapeHtml(blob.lastModified)}</td>
+                        </tr>
+                        <tr>
+                            <th>ETag</th>
+                            <td data-testid="info-etag" class="text-break">${escapeHtml(blob.eTag)}</td>
+                        </tr>
+                        <tr>
+                            <th>Content Type</th>
+                            <td data-testid="info-contenttype">${escapeHtml(blob.contentType)}</td>
+                        </tr>
+                        <tr>
+                            <th>Content Length</th>
+                            <td data-testid="info-contentlength">${formatFileSize(blob.contentLength || 0)}</td>
+                        </tr>
+                        <tr>
+                            <th>Blob Type</th>
+                            <td data-testid="info-blobtype">${escapeHtml(blob.blobType)}</td>
+                        </tr>
+                        <tr>
+                            <th>Created On</th>
+                            <td data-testid="info-createdon" class="${blob.createdOn ? '' : 'text-muted'}">${blob.createdOn ? escapeHtml(blob.createdOn) : 'not set'}</td>
+                        </tr>
+                        <tr>
+                            <th>Expires On</th>
+                            <td data-testid="info-expireson" class="${blob.expiresOn ? '' : 'text-muted'}">${blob.expiresOn ? escapeHtml(blob.expiresOn) : 'not set'}</td>
+                        </tr>
+                        <tr>
+                            <th>Metadata</th>
+                            <td data-testid="info-metadata">
+                                ${blob.metadata && Object.keys(blob.metadata).length > 0
+                                    ? `<pre class="mb-0 small">${escapeHtml(JSON.stringify(blob.metadata, null, 2))}</pre>`
+                                    : `<span class="text-muted">No metadata</span>`
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Tags</th>
+                            <td data-testid="info-tags">
+                                ${blob.tags && Object.keys(blob.tags).length > 0
+                                    ? `<pre class="mb-0 small">${escapeHtml(JSON.stringify(blob.tags, null, 2))}</pre>`
+                                    : `<span class="text-muted">No tags</span>`
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             `;
 
             // Add action buttons
