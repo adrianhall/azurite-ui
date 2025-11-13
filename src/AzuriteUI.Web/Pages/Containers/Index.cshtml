@@ -137,6 +137,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/dateFormatter.js"></script>
     <script src="~/js/metadataEditor.js"></script>
     <script>
         let containers = [];
@@ -412,7 +413,7 @@
                         </tr>
                         <tr>
                             <th>Last Modified</th>
-                            <td data-testid="info-lastmodified">${escapeHtml(container.lastModified)}</td>
+                            <td data-testid="info-lastmodified">${formatDateWithTooltip(container.lastModified)}</td>
                         </tr>
                         <tr>
                             <th>ETag</th>
