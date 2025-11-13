@@ -139,6 +139,7 @@
 
 @section Scripts {
     <script src="~/js/dateFormatter.js"></script>
+    <script src="~/js/metadataEditor.js"></script>
     <script>
         let blobs = [];
         let currentSort = { field: 'name', direction: 'asc' };
@@ -146,6 +147,8 @@
         let nextLink = null;
         let isLoading = false;
         let selectedBlob = null;
+        let metadataEditorInstance = null;
+        let tagsEditorInstance = null;
         const containerName = '@Model.ContainerName';
         const highlightBlobName = '@Model.Blob';
 
@@ -439,6 +442,60 @@
             }
         }
 
+        // Save blob metadata and tags
+        async function saveBlobMetadataAndTags(updatedMetadata = null, updatedTags = null) {
+            if (!selectedBlob) return false;
+
+            try {
+                // Use provided values if given, otherwise use current selectedBlob values
+                const currentMetadata = updatedMetadata !== null ? updatedMetadata : (selectedBlob.metadata || {});
+                const currentTags = updatedTags !== null ? updatedTags : (selectedBlob.tags || {});
+
+                const response = await fetch(`/api/containers/${encodeURIComponent(containerName)}/blobs/${encodeURIComponent(selectedBlob.name)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        containerName: containerName,
+                        blobName: selectedBlob.name,
+                        metadata: currentMetadata,
+                        tags: currentTags
+                    })
+                });
+
+                if (response.ok) {
+                    const updatedBlob = await response.json();
+
+                    // Update local blob array
+                    const index = blobs.findIndex(b => b.name === selectedBlob.name);
+                    if (index !== -1) {
+                        blobs[index] = updatedBlob;
+                    }
+
+                    // Update selectedBlob reference
+                    selectedBlob = updatedBlob;
+
+                    // Update both editor instances with the new data
+                    if (metadataEditorInstance) {
+                        metadataEditorInstance.updateMetadata(updatedBlob.metadata || {});
+                    }
+                    if (tagsEditorInstance) {
+                        tagsEditorInstance.updateMetadata(updatedBlob.tags || {});
+                    }
+
+                    return true;
+                } else {
+                    const error = await response.json();
+                    alert('Failed to update blob: ' + (error.title || 'Unknown error'));
+                    return false;
+                }
+            } catch (error) {
+                alert('Failed to update blob: ' + error.message);
+                return false;
+            }
+        }
+
         // Show info panel
         function showInfoPanel(blob) {
             selectedBlob = blob;
@@ -499,19 +556,13 @@
                         <tr>
                             <th>Metadata</th>
                             <td data-testid="info-metadata">
-                                ${blob.metadata && Object.keys(blob.metadata).length > 0
-                                    ? `<pre class="mb-0 small">${escapeHtml(JSON.stringify(blob.metadata, null, 2))}</pre>`
-                                    : `<span class="text-muted">No metadata</span>`
-                                }
+                                <div id="metadata-editor-container"></div>
                             </td>
                         </tr>
                         <tr>
                             <th>Tags</th>
                             <td data-testid="info-tags">
-                                ${blob.tags && Object.keys(blob.tags).length > 0
-                                    ? `<pre class="mb-0 small">${escapeHtml(JSON.stringify(blob.tags, null, 2))}</pre>`
-                                    : `<span class="text-muted">No tags</span>`
-                                }
+                                <div id="tags-editor-container"></div>
                             </td>
                         </tr>
                     </tbody>
@@ -528,6 +579,32 @@
                     <i class="bi bi-cloud-download me-1"></i> Download
                 </a>
             `;
+
+            // Initialize metadata editor
+            metadataEditorInstance = new MetadataEditor(
+                'metadata-editor-container',
+                blob.metadata || {},
+                async (newMetadata) => {
+                    return await saveBlobMetadataAndTags(newMetadata, null);
+                },
+                () => {
+                    console.log('Metadata edit cancelled');
+                }
+            );
+            metadataEditorInstance.render();
+
+            // Initialize tags editor
+            tagsEditorInstance = new MetadataEditor(
+                'tags-editor-container',
+                blob.tags || {},
+                async (newTags) => {
+                    return await saveBlobMetadataAndTags(null, newTags);
+                },
+                () => {
+                    console.log('Tags edit cancelled');
+                }
+            );
+            tagsEditorInstance.render();
 
             const offcanvas = new bootstrap.Offcanvas(document.getElementById('blobInfoPanel'));
             offcanvas.show();
