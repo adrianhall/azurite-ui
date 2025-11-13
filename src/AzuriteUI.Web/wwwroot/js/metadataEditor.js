@@ -44,7 +44,7 @@ class MetadataEditor {
                         <th>Key</th>
                         <th>Value</th>
                         <th style="width: 40px; text-align: center;">
-                            <i class="bi bi-pencil action-icon" onclick="metadataEditorInstance.toggleEditMode()"
+                            <i class="bi bi-pencil action-icon metadata-edit-button"
                                title="Edit metadata" style="cursor: pointer;"></i>
                         </th>
                     </tr>
@@ -76,6 +76,12 @@ class MetadataEditor {
         `;
 
         this.container.innerHTML = html;
+
+        // Attach event listener for edit button
+        const editButton = this.container.querySelector('.metadata-edit-button');
+        if (editButton) {
+            editButton.addEventListener('click', () => this.toggleEditMode());
+        }
     }
 
     /**
@@ -96,7 +102,7 @@ class MetadataEditor {
                         <th style="width: 50px;"></th>
                     </tr>
                 </thead>
-                <tbody id="metadata-rows">
+                <tbody class="metadata-rows">
         `;
 
         metadataEntries.forEach(([key, value], index) => {
@@ -107,21 +113,43 @@ class MetadataEditor {
                 </tbody>
             </table>
             <div class="mt-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="metadataEditorInstance.addRow()">
+                <button type="button" class="btn btn-sm btn-outline-secondary metadata-add-button">
                     <i class="bi bi-plus-circle-fill me-1"></i> Add
                 </button>
             </div>
             <div class="metadata-edit-actions">
-                <button type="button" class="btn btn-sm btn-primary" onclick="metadataEditorInstance.save()">
+                <button type="button" class="btn btn-sm btn-primary metadata-save-button">
                     <i class="bi bi-check-circle me-1"></i> Save
                 </button>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="metadataEditorInstance.cancel()">
+                <button type="button" class="btn btn-sm btn-secondary metadata-cancel-button">
                     <i class="bi bi-x-circle me-1"></i> Cancel
                 </button>
             </div>
         `;
 
         this.container.innerHTML = html;
+
+        // Attach event listeners for buttons
+        const addButton = this.container.querySelector('.metadata-add-button');
+        if (addButton) {
+            addButton.addEventListener('click', () => this.addRow());
+        }
+
+        const saveButton = this.container.querySelector('.metadata-save-button');
+        if (saveButton) {
+            saveButton.addEventListener('click', () => this.save());
+        }
+
+        const cancelButton = this.container.querySelector('.metadata-cancel-button');
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => this.cancel());
+        }
+
+        // Attach event listeners for remove buttons
+        const removeButtons = this.container.querySelectorAll('.metadata-remove-button');
+        removeButtons.forEach((button, index) => {
+            button.addEventListener('click', () => this.removeRow(index));
+        });
     }
 
     /**
@@ -139,8 +167,8 @@ class MetadataEditor {
                            placeholder="Value" data-row-index="${index}" />
                 </td>
                 <td class="text-center">
-                    <i class="bi bi-dash-circle-fill action-icon text-danger"
-                       onclick="metadataEditorInstance.removeRow(${index})"
+                    <i class="bi bi-dash-circle-fill action-icon text-danger metadata-remove-button"
+                       data-row-index="${index}"
                        title="Remove" style="cursor: pointer;"></i>
                 </td>
             </tr>
@@ -165,7 +193,7 @@ class MetadataEditor {
      * Add a new empty row in edit mode
      */
     addRow() {
-        const tbody = document.getElementById('metadata-rows');
+        const tbody = this.container.querySelector('.metadata-rows');
         if (!tbody) return;
 
         const index = tbody.children.length;
@@ -181,19 +209,25 @@ class MetadataEditor {
                        placeholder="Value" data-row-index="${index}" />
             </td>
             <td class="text-center">
-                <i class="bi bi-dash-circle-fill action-icon text-danger"
-                   onclick="metadataEditorInstance.removeRow(${index})"
+                <i class="bi bi-dash-circle-fill action-icon text-danger metadata-remove-button"
+                   data-row-index="${index}"
                    title="Remove" style="cursor: pointer;"></i>
             </td>
         `;
         tbody.appendChild(newRow);
+
+        // Attach event listener to the new remove button
+        const removeButton = newRow.querySelector('.metadata-remove-button');
+        if (removeButton) {
+            removeButton.addEventListener('click', () => this.removeRow(index));
+        }
     }
 
     /**
      * Remove a row by index
      */
     removeRow(index) {
-        const tbody = document.getElementById('metadata-rows');
+        const tbody = this.container.querySelector('.metadata-rows');
         if (!tbody) return;
 
         const row = tbody.querySelector(`tr[data-row-index="${index}"]`);
@@ -206,7 +240,7 @@ class MetadataEditor {
      * Validate metadata inputs
      */
     validate() {
-        const rows = document.querySelectorAll('#metadata-rows tr');
+        const rows = this.container.querySelectorAll('.metadata-rows tr');
         const keys = [];
         const errors = [];
 
@@ -248,7 +282,7 @@ class MetadataEditor {
      * Collect metadata from input fields
      */
     collectMetadata() {
-        const rows = document.querySelectorAll('#metadata-rows tr');
+        const rows = this.container.querySelectorAll('.metadata-rows tr');
         const metadata = {};
 
         rows.forEach(row => {

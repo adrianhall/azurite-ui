@@ -486,6 +486,9 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+# Cake tool file (dotnet tool restore)
+tools/
+
 # AI generated files
 .claude/
 .cursor/
