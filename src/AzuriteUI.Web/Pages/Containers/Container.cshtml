@@ -138,6 +138,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/dateFormatter.js"></script>
     <script>
         let blobs = [];
         let currentSort = { field: 'name', direction: 'asc' };
@@ -469,7 +470,7 @@
                         </tr>
                         <tr>
                             <th>Last Modified</th>
-                            <td data-testid="info-lastmodified">${escapeHtml(blob.lastModified)}</td>
+                            <td data-testid="info-lastmodified">${formatDateWithTooltip(blob.lastModified)}</td>
                         </tr>
                         <tr>
                             <th>ETag</th>
@@ -489,11 +490,11 @@
                         </tr>
                         <tr>
                             <th>Created On</th>
-                            <td data-testid="info-createdon" class="${blob.createdOn ? '' : 'text-muted'}">${blob.createdOn ? escapeHtml(blob.createdOn) : 'not set'}</td>
+                            <td data-testid="info-createdon" class="${blob.createdOn ? '' : 'text-muted'}">${blob.createdOn ? formatDateWithTooltip(blob.createdOn) : 'not set'}</td>
                         </tr>
                         <tr>
                             <th>Expires On</th>
-                            <td data-testid="info-expireson" class="${blob.expiresOn ? '' : 'text-muted'}">${blob.expiresOn ? escapeHtml(blob.expiresOn) : 'not set'}</td>
+                            <td data-testid="info-expireson" class="${blob.expiresOn ? '' : 'text-muted'}">${blob.expiresOn ? formatDateWithTooltip(blob.expiresOn) : 'not set'}</td>
                         </tr>
                         <tr>
                             <th>Metadata</th>
