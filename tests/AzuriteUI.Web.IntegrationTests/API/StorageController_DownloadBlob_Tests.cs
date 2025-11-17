@@ -1,7 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
+using AzuriteUI.Web.Services.CacheDb;
+using AzuriteUI.Web.Services.Repositories.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 namespace AzuriteUI.Web.IntegrationTests.API;
@@ -95,6 +100,62 @@ public class StorageController_DownloadBlob_Tests(ServiceFixture fixture) : Base
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentDisposition.Should().NotBeNull();
         response.Content.Headers.ContentDisposition!.DispositionType.Should().Be("attachment");
+    }
+
+    #endregion
+
+    #region Special Characters in Filename Tests
+
+    [Theory(Timeout = 60000)]
+    [InlineData("file with spaces.txt")]
+    [InlineData("file-with-unicode-café.txt")]
+    [InlineData("file&with&ampersands.txt")]
+    [InlineData("file(with)parens.txt")]
+    [InlineData("file#with#hash.txt")]
+    public async Task UploadAndDownload_WithSpecialCharactersInFilename_ShouldPreserveFilename(string blobName)
+    {
+        // Arrange - Create container
+        var containerName = await Fixture.Azurite.CreateContainerAsync("test-container");
+        await Fixture.SynchronizeCacheAsync();
+        using HttpClient client = Fixture.CreateClient();
+
+        // Arrange - Create upload session
+        var uploadId = await CreateUploadSessionAsync(client, containerName, blobName, 512);
+
+        // Arrange - Upload single block
+        var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes("block1"));
+        await UploadBlockAsync(client, uploadId, blockId, 512);
+
+        // Arrange - Commit upload
+        var commitDto = new CommitUploadRequestDTO { BlockIds = [blockId] };
+        var commitResponse = await client.PutAsJsonAsync($"/api/uploads/{uploadId}/commit", commitDto);
+        commitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Arrange - Verify blob exists in Azurite with correct unencoded name
+        var blobExists = await Fixture.Azurite.BlobExistsAsync(containerName, blobName);
+        blobExists.Should().BeTrue($"blob '{blobName}' should exist in Azurite storage");
+
+        // Arrange - Verify blob is in database cache with correct unencoded name
+        using var scope = Fixture.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
+        var cachedBlob = await context.Blobs.SingleOrDefaultAsync(b =>
+            b.ContainerName == containerName && b.Name == blobName);
+        cachedBlob.Should().NotBeNull($"blob '{blobName}' should be cached in database");
+        cachedBlob!.Name.Should().Be(blobName, "database should store unencoded blob name");
+
+        // Act - Download with Content-Disposition (URL must be encoded)
+        var encodedBlobName = Uri.EscapeDataString(blobName);
+        var response = await client.GetAsync(
+            $"/api/containers/{containerName}/blobs/{encodedBlobName}/content?disposition=attachment");
+
+        // Assert - Status and headers
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentDisposition.Should().NotBeNull();
+        response.Content.Headers.ContentDisposition!.DispositionType.Should().Be("attachment");
+
+        // Assert - FileName should contain the UNENCODED blob name (this is the bug being tested)
+        response.Content.Headers.ContentDisposition.FileName.Should().Be(blobName,
+            "Content-Disposition FileName should contain the unencoded blob name, not the URL-encoded version");
     }
 
     #endregion
