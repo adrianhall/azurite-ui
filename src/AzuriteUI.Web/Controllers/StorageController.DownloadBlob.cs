@@ -56,10 +56,11 @@ public partial class StorageController : ODataController
         if (disposition is not null)
         {
             // Use ContentDispositionHeaderValue to properly format the header
+            // Note: ContentDispositionHeaderValue automatically handles RFC 5987 encoding for FileNameStar
             var contentDisposition = new ContentDispositionHeaderValue(disposition.ToLowerInvariant())
             {
                 FileName = blobName,
-                FileNameStar = Uri.EscapeDataString(blobName)
+                FileNameStar = blobName
             };
             Response.Headers.ContentDisposition = contentDisposition.ToString();
         }
