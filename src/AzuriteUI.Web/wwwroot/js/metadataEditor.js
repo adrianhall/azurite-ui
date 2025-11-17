@@ -310,7 +310,7 @@ class MetadataEditor {
         // Validate inputs
         const validation = this.validate();
         if (!validation.isValid) {
-            alert('Validation errors:\n' + validation.errors.join('\n'));
+            Toast.warning('Validation errors:\n' + validation.errors.join('\n'));
             return;
         }
 
@@ -330,7 +330,7 @@ class MetadataEditor {
             }
         } catch (error) {
             console.error('Error saving metadata:', error);
-            alert('Failed to save metadata. Please try again.');
+            Toast.error('Failed to save metadata. Please try again.');
         }
     }
 

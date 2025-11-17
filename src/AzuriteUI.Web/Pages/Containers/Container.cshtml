@@ -432,10 +432,10 @@
                     selectedBlob = null;
                 } else {
                     const error = await response.json();
-                    alert('Failed to delete blob: ' + (error.title || 'Unknown error'));
+                    Toast.error('Failed to delete blob: ' + (error.title || 'Unknown error'));
                 }
             } catch (error) {
-                alert('Failed to delete blob: ' + error.message);
+                Toast.error('Failed to delete blob: ' + error.message);
             } finally {
                 button.disabled = false;
                 button.innerHTML = 'Delete';
@@ -484,14 +484,23 @@
                         tagsEditorInstance.updateMetadata(updatedBlob.tags || {});
                     }
 
+                    // Show success toast with appropriate message
+                    if (updatedMetadata !== null && updatedTags !== null) {
+                        Toast.success('Blob metadata and tags updated successfully');
+                    } else if (updatedMetadata !== null) {
+                        Toast.success('Blob metadata updated successfully');
+                    } else if (updatedTags !== null) {
+                        Toast.success('Blob tags updated successfully');
+                    }
+
                     return true;
                 } else {
                     const error = await response.json();
-                    alert('Failed to update blob: ' + (error.title || 'Unknown error'));
+                    Toast.error('Failed to update blob: ' + (error.title || 'Unknown error'));
                     return false;
                 }
             } catch (error) {
-                alert('Failed to update blob: ' + error.message);
+                Toast.error('Failed to update blob: ' + error.message);
                 return false;
             }
         }
@@ -632,7 +641,7 @@
             const file = fileInput.files[0];
 
             if (!file) {
-                alert('Please select a file to upload');
+                Toast.warning('Please select a file to upload');
                 return;
             }
 
@@ -674,7 +683,7 @@
                 // Listen for errors
                 currentUploader.addEventListener('upload:error', (event) => {
                     const { message } = event.detail;
-                    alert('Upload failed: ' + message);
+                    Toast.error('Upload failed: ' + message);
                     resetUploadModal();
                 });
 

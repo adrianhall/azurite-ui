@@ -389,10 +389,10 @@
                     selectedContainer = null;
                 } else {
                     const error = await response.json();
-                    alert('Failed to delete container: ' + (error.title || 'Unknown error'));
+                    Toast.error('Failed to delete container: ' + (error.title || 'Unknown error'));
                 }
             } catch (error) {
-                alert('Failed to delete container: ' + error.message);
+                Toast.error('Failed to delete container: ' + error.message);
             } finally {
                 button.disabled = false;
                 button.innerHTML = 'Delete';
@@ -494,15 +494,18 @@
                     // Update selectedContainer
                     selectedContainer = updatedContainer;
 
+                    // Show success toast
+                    Toast.success('Container metadata updated successfully');
+
                     return true;
                 } else {
                     const error = await response.json();
-                    alert('Failed to update metadata: ' + (error.title || 'Unknown error'));
+                    Toast.error('Failed to update metadata: ' + (error.title || 'Unknown error'));
                     return false;
                 }
             } catch (error) {
                 console.error('Error updating metadata:', error);
-                alert('Failed to update metadata. Please try again.');
+                Toast.error('Failed to update metadata. Please try again.');
                 return false;
             }
         }
@@ -545,10 +548,10 @@
                     await loadContainers();
                 } else {
                     const error = await response.json();
-                    alert('Failed to create container: ' + (error.title || 'Unknown error'));
+                    Toast.error('Failed to create container: ' + (error.title || 'Unknown error'));
                 }
             } catch (error) {
-                alert('Failed to create container: ' + error.message);
+                Toast.error('Failed to create container: ' + error.message);
             } finally {
                 button.disabled = false;
                 button.innerHTML = 'Create';
