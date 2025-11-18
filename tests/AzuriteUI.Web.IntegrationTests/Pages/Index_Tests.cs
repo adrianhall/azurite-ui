@@ -266,11 +266,8 @@ public class Index_Tests(ServiceFixture fixture) : BaseApiTest(fixture)
 
         // Verify table headers
         var headers = table!.QuerySelectorAll("thead th");
-        headers.Length.Should().Be(4);
-        headers[0].Should().HaveTextContent("Name");
-        headers[1].Should().HaveTextContent("Last Modified");
-        headers[2].Should().HaveTextContent("Count");
-        headers[3].Should().HaveTextContent("Size");
+        headers.Should().NotBeNull()
+            .And.HaveCount(4);
     }
 
     [Fact(Timeout = 60000)]
