@@ -61,7 +61,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Last Modified</th>
-                                <th class="text-end">Count</th>
+                                <th class="text-end">Files</th>
                                 <th class="text-end">Size</th>
                             </tr>
                         </thead>
@@ -203,10 +203,10 @@
                     window.location.reload();
                 } else {
                     const error = await response.json();
-                    alert('Failed to create container: ' + (error.title || 'Unknown error'));
+                    Toast.error('Failed to create container: ' + (error.title || 'Unknown error'));
                 }
             } catch (error) {
-                alert('Failed to create container: ' + error.message);
+                Toast.error('Failed to create container: ' + error.message);
             }
         });
     </script>
